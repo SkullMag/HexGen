@@ -1,0 +1,9 @@
+# Reconstructs the historical prompt-bank bytes. GPU/runtime dependencies are separate.
+numpy==1.26.4
+transformers==4.36.2
+tokenizers==0.15.2
+sentencepiece==0.2.2
+huggingface-hub==0.36.2
+pyarrow==18.1.0
+matplotlib==3.9.4
+aiohttp==3.14.3

@@ -21,7 +21,7 @@ from hybrid_parallel_model_dist import get_hybrid_parallel_configs, construct_hy
 from typing import Tuple, List
 from llama_config_utils import llama_config_to_gpt2_config, config_from_checkpoint, overwrite_configs_and_args
 from transformers import GPT2Config, GPT2Tokenizer
-from transformers import LlamaForCausalLM, LlamaTokenizer
+from transformers import LlamaForCausalLM, LlamaTokenizer, LlamaConfig
 from hexgen_core.models.gpt import GPTLMHeadModel, shard_state_dict_tp, create_mixer_cls, create_mlp_cls
 from hexgen_core import gen_hetero_groups
 from load_model_parameters_utils.load_model_parameters import load_model_parameters
@@ -52,7 +52,8 @@ def create_model(args):
     device = torch.device("cuda", local_rank)
     world_size = torch.distributed.get_world_size()
 
-    llama_config = config_from_checkpoint('./llama-config/', args.model_size)
+    llama_config = (LlamaConfig.from_pretrained(args.checkpoint_path) if args.checkpoint_path
+                    else config_from_checkpoint('./llama-config/', args.model_size))
     config = llama_config_to_gpt2_config(llama_config)
     overwrite_configs_and_args(config, args)
     overwrite_megatron_args(config, args)
@@ -87,7 +88,7 @@ def create_model(args):
     # Load model checkpoints with respect to hetero_config
     tp_ranks_whole_model = hetero_groups['tp_ranks_whole_model']
     tp_group_list = hetero_groups['tp_rank_groups']
-    state_dicts_path = "./load_model_parameters_utils/"
+    state_dicts_path = args.state_dicts_path
     load_model_parameters(model, config, state_dicts_path, tp_ranks_whole_model, tp_group_list, rank)
 
     if rank == 0:
@@ -96,9 +97,9 @@ def create_model(args):
     time.sleep(rank * 0.1)
 
     # Initialize the tokenizer for the GPT model.
-    tokenizer = LlamaTokenizer.from_pretrained("../../../Llama-2-7b-chat-hf/") 
+    tokenizer = LlamaTokenizer.from_pretrained(args.checkpoint_path or "../../../Llama-2-7b-chat-hf/")
 
-    return model, tokenizer, hetero_groups['pp_rank_groups']
+    return model.eval(), tokenizer, hetero_groups['pp_rank_groups']
 
 def inference(model, tokenizer, pp_groups, model_msg, args):
     # current rank
@@ -111,17 +112,25 @@ def inference(model, tokenizer, pp_groups, model_msg, args):
     top_k = model_msg['top_k']
     top_p = model_msg['top_p']
     
-    max_length += len(prompt_text)
     input_ids = tokenizer.encode(prompt_text, return_tensors="pt").cuda()
+    max_length += input_ids.shape[1]
     input_ids_shape = [[-1, len(input_ids[0]), args.hidden_size], [-1, len(input_ids[0])], [-1, len(input_ids[0]), args.hidden_size]]
 
     torch.cuda.synchronize()
+    torch.cuda.reset_peak_memory_stats()
     start = time.time()
     output = decode(input_ids, input_ids_shape, model, forward_step_func, max_length, pp_last_stage_rank=pp_groups[0][-1], 
                     temperature=temperature, top_k=top_k, top_p=top_p, timing=True).sequences
     torch.cuda.synchronize()
     end = time.time()
     infer_time = end - start
+    args.last_inference_metadata = {
+        'rank': rank,
+        'input_ids': input_ids[0].tolist(),
+        'generated_ids': output[0, input_ids.shape[1]:].tolist(),
+        'inference_seconds': infer_time,
+        'peak_allocated_bytes': torch.cuda.max_memory_allocated(),
+    }
     
     decoded_text = tokenizer.decode(output[0])
     if rank == pp_groups[0][-1]:

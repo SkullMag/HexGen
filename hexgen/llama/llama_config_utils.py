@@ -44,6 +44,8 @@ def llama_config_to_gpt2_config(llama_config: LlamaConfig) -> GPT2Config:
         n_embd=llama_config.hidden_size,
         n_layer=llama_config.num_hidden_layers,
         n_head=llama_config.num_attention_heads,
+        n_head_kv=llama_config.num_key_value_heads,
+        rotary_emb_base=llama_config.rope_theta,
         n_inner=llama_config.intermediate_size,
         activation_function='swiglu',  # Hardcode since HF calls it 'silu'
         # Llama doesn't have dropout, idk if it's because they only release the inference code

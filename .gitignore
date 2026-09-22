@@ -1,2 +1,8 @@
 __pycache__
 .DS_Store
+
+# Local experiment assets; do not publish credentials, prompts, weights or results.
+/benchmark/native_7b/runs/
+.env
+*.pem
+*.key
