@@ -1,5 +1,13 @@
 # HexGen
 
+## Experiment in this fork
+
+The [native homogeneous 7B experiment](benchmark/native_7b/README.md) documents
+the RTX 6000 TP=2/PP=1 setup, pinned LMSYS preparation, native replay and audits,
+coordinator fixes, and [measured results](benchmark/native_7b/RESULTS.md). This is
+a scaled starting-point experiment, not the original paper's 70B reproduction.
+
+
 *HexGen: Generative Inference of Large Language Model over Heterogeneous Environment* [ICML'24] [Paper Link](https://arxiv.org/abs/2311.11514)
 
 HexGen presents a versatile framework capable of facilitating Llama-2 inference, integrating **hybrid model parallelism** along with **an automated mechanism for request dispatch**. Key features include:

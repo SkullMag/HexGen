@@ -1,10 +1,12 @@
 package server
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 )
 
 func ErrorHandler(res http.ResponseWriter, req *http.Request, err error) {
-	res.Write([]byte(fmt.Sprintf("ERROR: %s", err.Error())))
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusBadGateway)
+	json.NewEncoder(res).Encode(map[string]string{"error": err.Error()})
 }

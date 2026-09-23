@@ -1,0 +1,23 @@
+{
+  "requests_per_experiment": 500,
+  "input_tokens": 128,
+  "workload": {
+    "dataset_id": "lmsys/chatbot_arena_conversations",
+    "dataset_revision": "1b6335d42a1d2c7e34870c905d03ab964f7f2bd8",
+    "dataset_file": "data/train-00000-of-00001-cced8514c7ed782a.parquet",
+    "split": "train",
+    "conversation_column": "conversation_a",
+    "selection_policy": "First user message only; trim outer whitespace; all languages; exclude prompts shorter than 127 text tokens; deduplicate text and truncated token sequences; sample 500 without replacement; prepend BOS and keep the first 127 text tokens; no assistant text, padding, or concatenation."
+  },
+  "prompt_seed": 20260919,
+  "model": "openlm-research/open_llama_7b_v2",
+  "model_revision": "e5961def23172a2384543940e773ab676033c963",
+  "source_sha256": "3726a6352e9bfc34e206460646f6e5e99bb837751966a671ddd30c7f64e5b06e",
+  "preparation_versions": {
+    "transformers": "4.36.2",
+    "tokenizers": "0.15.2",
+    "sentencepiece": "0.2.2",
+    "huggingface-hub": "0.36.2",
+    "pyarrow": "18.1.0"
+  }
+}
