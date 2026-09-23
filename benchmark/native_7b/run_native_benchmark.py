@@ -117,9 +117,9 @@ async def main():
     assert not (ROOT/'controller-started.json').exists(), 'Existing controller run must not be restarted'
     write(ROOT/'controller-started.json',{'utc':utc(),'driver_sha256':sha(Path(__file__))})
     await baseline()
-    await run_rate('pilot_13_32_0.125_red',.125,50)
-    for number, rate, label in [(13,.125,'0.125'),(11,.25,'0.25'),(9,.5,'0.5'),
-                                (7,1.,'01'),(5,2.,'02'),(3,4.,'04'),(1,8.,'08')]:
+    await run_rate('pilot_01_32_0.125_red',.125,50)
+    for number, (rate, label) in enumerate([(.125,'0.125'),(.25,'0.25'),(.5,'0.5'),
+                                          (1.,'01'),(2.,'02'),(4.,'04'),(8.,'08')], start=1):
         await run_rate(f'{number:02d}_32_{label}_red',rate,500)
     status('complete',completed_rates=7,total_measured_requests=3500)
 

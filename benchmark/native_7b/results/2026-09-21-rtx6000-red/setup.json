@@ -128,6 +128,17 @@
     ],
     "description": "Public export of the completed native RTX Red run. Prompt text omitted; retained CSV values, metrics and plots unchanged. No new GPU experiment.",
     "original_full_archive_sha256": "8a2ba7d2f230e5decbcee64b7594a3a67be299e391e2dd1e067caa885e4cae18",
-    "source_hashes_describe": "Frozen measured source; the PR subsequently makes paths and endpoints configurable. This is not a GPU run of the publication commit."
+    "source_hashes_describe": "Frozen measured source; the PR subsequently makes paths and endpoints configurable. This is not a GPU run of the publication commit.",
+    "directory_naming": "expNum_seqLen_reqRate_deploy; expNum enumerates full-suite runs 01 through 07 in ascending request-rate order. The pilot is separate.",
+    "source_directories": {
+      "01_32_0.125_red": "13_32_0.125_red",
+      "02_32_0.25_red": "11_32_0.25_red",
+      "03_32_0.5_red": "09_32_0.5_red",
+      "04_32_01_red": "07_32_01_red",
+      "05_32_02_red": "05_32_02_red",
+      "06_32_04_red": "03_32_04_red",
+      "07_32_08_red": "01_32_08_red"
+    },
+    "request_ids": "Historical request IDs are unchanged; their prefixes refer to original evidence directory names."
   }
 }

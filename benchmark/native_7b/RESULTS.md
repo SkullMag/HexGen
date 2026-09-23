@@ -9,19 +9,20 @@ or [browse the seven experiment folders](results/2026-09-21-rtx6000-red/).
 The ZIP contains exactly 22 files: shared `setup.json` and seven
 `requests.csv` / `metrics.json` / `plot.png` triplets. CSVs omit `prompt_text`
 for public distribution; request IDs, prompt IDs, success flags and latency values
-are unchanged. The original archive with submitted prompts remains local.
+are unchanged. Folders are numbered `01` through `07` in run order; historical
+request IDs retain their original prefixes. The original archive with submitted prompts remains local.
 
 All seven rates completed: 3500/3500 requests. Fresh TP=2 base inference reference: 1.164224 s.
 
 | RPS | Requests | Median latency (s) | p95 latency (s) |
 |---:|---:|---:|---:|
-| [0.125](results/2026-09-21-rtx6000-red/13_32_0.125_red/) | 500 | 1.196 | 1.963 |
-| [0.25](results/2026-09-21-rtx6000-red/11_32_0.25_red/) | 500 | 1.189 | 2.236 |
-| [0.5](results/2026-09-21-rtx6000-red/09_32_0.5_red/) | 500 | 1.265 | 5.352 |
-| [1](results/2026-09-21-rtx6000-red/07_32_01_red/) | 500 | 36.990 | 60.097 |
+| [0.125](results/2026-09-21-rtx6000-red/01_32_0.125_red/) | 500 | 1.196 | 1.963 |
+| [0.25](results/2026-09-21-rtx6000-red/02_32_0.25_red/) | 500 | 1.189 | 2.236 |
+| [0.5](results/2026-09-21-rtx6000-red/03_32_0.5_red/) | 500 | 1.265 | 5.352 |
+| [1](results/2026-09-21-rtx6000-red/04_32_01_red/) | 500 | 36.990 | 60.097 |
 | [2](results/2026-09-21-rtx6000-red/05_32_02_red/) | 500 | 325.259 | 451.534 |
-| [4](results/2026-09-21-rtx6000-red/03_32_04_red/) | 500 | 284.888 | 492.121 |
-| [8](results/2026-09-21-rtx6000-red/01_32_08_red/) | 500 | 454.122 | 509.138 |
+| [4](results/2026-09-21-rtx6000-red/06_32_04_red/) | 500 | 284.888 | 492.121 |
+| [8](results/2026-09-21-rtx6000-red/07_32_08_red/) | 500 | 454.122 | 509.138 |
 
 ![Seven-rate native RTX Red overview](results/2026-09-21-rtx6000-red/overview.png)
 

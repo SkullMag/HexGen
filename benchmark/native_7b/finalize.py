@@ -8,8 +8,8 @@ import sys
 import zipfile
 
 from paths import RUN_DIR as root
-experiments = [('13_32_0.125_red',.125),('11_32_0.25_red',.25),('09_32_0.5_red',.5),
-               ('07_32_01_red',1),('05_32_02_red',2),('03_32_04_red',4),('01_32_08_red',8)]
+experiments = [('01_32_0.125_red',.125),('02_32_0.25_red',.25),('03_32_0.5_red',.5),
+               ('04_32_01_red',1),('05_32_02_red',2),('06_32_04_red',4),('07_32_08_red',8)]
 assert json.loads((root/'status.json').read_text())['phase'] == 'complete'
 for directory,_ in experiments:
     subprocess.run([sys.executable,str(Path(__file__).with_name('audit_results.py')),directory],check=True)

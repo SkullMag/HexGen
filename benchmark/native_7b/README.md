@@ -186,7 +186,7 @@ At each gate, refresh the rank evidence/provenance from both hosts and run:
 ```bash
 python benchmark/native_7b/audit_results.py baseline
 # At a rate gate use its directory, for example:
-python benchmark/native_7b/audit_results.py 13_32_0.125_red
+python benchmark/native_7b/audit_results.py 01_32_0.125_red
 ```
 
 This writes an audit result and a candidate `.release.json` under `checkpoints/`.
@@ -198,6 +198,9 @@ and status is `complete`, `finalize.py` re-audits all rates, creates the overvie
 and verifies a full ZIP with exactly 22 files (shared setup plus seven triplets).
 
 Each compact experiment has only `requests.csv`, `metrics.json`, `plot.png`.
+Folders use `expNum_seqLen_reqRate_deploy`, with experiment numbers `01` through
+`07` in ascending request-rate order. The 50-request pilot is separate and does
+not consume a full-suite number. `seqLen=32` means generated output tokens.
 CSV columns: `request_id,prompt_id,prompt_text,success,end_to_end_latency_s`.
 `prompt_text` is exactly the submitted truncated text. Keep raw client and both
 rank logs outside Git for independent verification.
@@ -221,6 +224,9 @@ succeeded, but high offered rates accumulated minutes of delay. See [RESULTS.md]
 The [published Red artifacts](results/2026-09-21-rtx6000-red/) include all seven
 per-rate measurement folders, the overview, provenance and a 22-file ZIP.
 Public CSVs omit prompt text; the original local experiment export retains it.
+The published folders are renumbered in run order; their historical request IDs
+remain unchanged for traceability. The frozen original evidence keeps its original
+names. The current controller/finalizer use sequential numbering for fresh runs.
 One finite trial per rate supplies no repeat-trial confidence intervals. Do not
 infer that 4 RPS is faster than 2 RPS from the median alone, or assign a precise
 queue/transport delay breakdown that was not instrumented. After collection, stop
