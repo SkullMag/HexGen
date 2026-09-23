@@ -218,6 +218,9 @@ rank logs outside Git for independent verification.
 
 The archived base was 1.1642241477966309 seconds. All 3,500 full-suite requests
 succeeded, but high offered rates accumulated minutes of delay. See [RESULTS.md](RESULTS.md).
+The [published Red artifacts](results/2026-09-21-rtx6000-red/) include all seven
+per-rate measurement folders, the overview, provenance and a 22-file ZIP.
+Public CSVs omit prompt text; the original local experiment export retains it.
 One finite trial per rate supplies no repeat-trial confidence intervals. Do not
 infer that 4 RPS is faster than 2 RPS from the median alone, or assign a precise
 queue/transport delay breakdown that was not instrumented. After collection, stop

@@ -1,0 +1,133 @@
+{
+  "scope": "Scaled homogeneous native HexGen experiment with 1024 HTTP streams per peer; not the paper 70B result.",
+  "model": "openlm-research/open_llama_7b_v2",
+  "model_revision": "e5961def23172a2384543940e773ab676033c963",
+  "hexgen_commit": "949414d1be18e504752508c0559cb966ddf999f4",
+  "hardware": "Two separate hosts with one Quadro RTX 6000 24 GB each",
+  "replicas": 1,
+  "tensor_parallel": 2,
+  "pipeline_parallel": 1,
+  "batch_size": 1,
+  "precision": "FP16",
+  "attention": "Regular attention; flash-attn 2.0.8 installed for native model/helper modules, FlashAttention kernels disabled",
+  "network": "NCCL socket transport on private Ethernet; RDMA disabled",
+  "serving": "Authors OCF head/worker coordinators with bounded resource and error-response patch; NATS, rank-based LlamaWorker, original decode and request_head_node client",
+  "coordinator_resources": {
+    "http_streams_per_peer": 1024,
+    "http_memory_mib_per_peer": 512
+  },
+  "coordinator_binary_sha256": "15bf11ffb9069a784050f83fa3f2782eacf91b88b4737344706e9f9b1acacfcf",
+  "native_runtime_file_sha256": {
+    "benchmark/hexgen_documents/_llama_worker.py": "320f2e3d93a60c775b77b573f94d19985bb3dba8cdda7e58e62577f10ff86f3b",
+    "benchmark/hexgen_documents/scripts/run_cross_node.sh": "74645aa48ff9b2a58a811e077c84db3b7f040c24d6e26b8961e133a4ea9623b3",
+    "benchmark/send_request/request.py": "e39b71ea3532f867cb1ee40af89b4080b2f41264c053aad37a1fbbb093835352",
+    "benchmark/utils/_base_rank_based.py": "2a5818bd94a8c7e9f93a13fc11bc4084eed6235b114900ce06bf5ef026ca9097",
+    "hexgen/llama/arguments.py": "c3ef1fe552361731556e581bdb928f109af9b4027c6ad12b47383bc925bcd789",
+    "hexgen/llama/llama_config_utils.py": "e3ba98eee888c02d9c3d5c874d1cc7dbf27eccf1cc555680148a3744ad9f0b27",
+    "hexgen/llama/llama_inference.py": "c6eea38883a9f9d927040eca28161c5455eee7bf510795032c2aceef3ab50528",
+    "hexgen/llama/load_model_parameters_utils/create_separate_state_dicts_llama_7b.py": "f8005ad2552c6545dbd9eedcba6844d02474bf04f3ec221a422b4471c62ee8c3",
+    "third_party/ocf/src/ocf-core/internal/common/requests/proxy.go": "6317bf61ae0486fad988566a1da6d40ba67c4b06883f5eea13989f1f1094fec1",
+    "third_party/ocf/src/ocf-core/internal/protocol/p2p/host.go": "fa28cddf679aac30ff874718b4771341270fc77a04fc638d1405605ddca35628",
+    "third_party/ocf/src/ocf-core/internal/server/forward.go": "8ded5a99585988bde3b4945bf6c6d5a1ca49b7cb5c048b904842c0e2fa0de2c0",
+    "third_party/ocf/src/ocf-core/internal/server/request.go": "6e00bb2469bf970c796e56d234faadc5ee884abb70adfb0267638b1352d09522"
+  },
+  "input_tokens": 128,
+  "output_tokens": 32,
+  "dataset": {
+    "dataset_id": "lmsys/chatbot_arena_conversations",
+    "dataset_revision": "1b6335d42a1d2c7e34870c905d03ab964f7f2bd8",
+    "dataset_file": "data/train-00000-of-00001-cced8514c7ed782a.parquet",
+    "split": "train",
+    "conversation_column": "conversation_a",
+    "selection_policy": "First user message only; trim outer whitespace; all languages; exclude prompts shorter than 127 text tokens; deduplicate text and truncated token sequences; sample 500 without replacement; prepend BOS and keep the first 127 text tokens; no assistant text, padding, or concatenation."
+  },
+  "input_adaptation": {
+    "original_bank_sha256": "e987aa7afaa9be8e2c6eab1c623d325c7c2abd5ee0c181737b52e6180d311797",
+    "replacement_policy": "Preserve 496 compatible records in place; replace four incompatible records with the first unused, round-trip-safe eligible records in source-row order.",
+    "replacements": [
+      {
+        "index": 80,
+        "old_prompt_id": "lmsys-3edab1b0f3a24d4185fe8315d7735a57",
+        "new_prompt_id": "lmsys-1808a2a2239a49e18726d71017cea017",
+        "reason": "Truncated byte-fallback sequence did not round-trip through the native text API"
+      },
+      {
+        "index": 174,
+        "old_prompt_id": "lmsys-3edb953b4ab4419a88849097ae136a62",
+        "new_prompt_id": "lmsys-0eb5e609dcd64d02a8f7dda909de5858",
+        "reason": "Truncated byte-fallback sequence did not round-trip through the native text API"
+      },
+      {
+        "index": 270,
+        "old_prompt_id": "lmsys-66de4090aca54fac8bf6e281b466c6ad",
+        "new_prompt_id": "lmsys-ab21da5438a94ab4a93d6ff0b66cf8b8",
+        "reason": "Truncated byte-fallback sequence did not round-trip through the native text API"
+      },
+      {
+        "index": 411,
+        "old_prompt_id": "lmsys-dfe95dfde6ce4b8788b97b2d6beb84af",
+        "new_prompt_id": "lmsys-e2031c6fe33f416da86a969274e5ecaf",
+        "reason": "Truncated byte-fallback sequence did not round-trip through the native text API"
+      }
+    ]
+  },
+  "prompt_bank_sha256": "a7e1963c0ef88643b9b8013707c33ecf7a932a70bdecfa40064bc5cb2de1e755",
+  "arrivals": "Authors historical PossoinWorkLoad generator; same first 500 seeded unit-rate offsets divided by each RPS; asynchronous native client calls; native server queueing; drain every rate.",
+  "arrival_seed": 20260919,
+  "included_rates": [
+    0.125,
+    0.25,
+    0.5,
+    1,
+    2,
+    4,
+    8
+  ],
+  "requests_per_rate": 500,
+  "base_inference_latency_seconds": 1.1642241477966309,
+  "base_measurement": "Median native rank-0 inference duration: tokenization excluded; includes synchronized distributed prefill and 32-token decode, and wait for the initial rank barrier. One TP=2 replica across two RTX 6000 hosts; isolated requests through OCF.",
+  "baseline_warmup_requests": 30,
+  "baseline_measured_requests": 100,
+  "metric_definitions": {
+    "end_to_end_latency": "Scheduled arrival to full response; includes submission lag, native queueing, network and inference.",
+    "throughput": "Successful requests divided by time from first scheduled arrival through final completion; includes drain.",
+    "memory": "Largest per-request peak PyTorch allocation on either GPU, including weights; excludes unused cached reservation and driver memory.",
+    "slo": "Percentage of offered requests finished by multiplier times the fresh TP=2 base reference."
+  },
+  "limitations": [
+    "Native OCF HTTP-per-peer resource limits explicitly raised to 1024 streams and 512 MiB; original transport error handling corrected.",
+    "Smaller model, fewer GPUs and cross-host TP differ from the paper.",
+    "Regular attention on Turing, not FlashAttention GPU kernels.",
+    "Controlled LMSYS subset; exact paper subset and live Figure 2 harness unavailable.",
+    "One finite trial per rate, no repeat-trial confidence intervals; overload results include finite queue drain."
+  ],
+  "credit": "LMSYS / Zheng et al. (2023), Chatbot Arena; user prompts CC-BY-4.0.",
+  "all_rates_complete": true,
+  "total_requests": 3500,
+  "baseline_summary": {
+    "reference_seconds": 1.1642241477966309,
+    "end_to_end_median_seconds": 1.1731036645069253,
+    "warmup_requests": 30,
+    "measured_requests": 100,
+    "rank_median_inference_seconds": {
+      "0": 1.1642241477966309,
+      "1": 1.16007399559021
+    },
+    "definition": "Median native rank-0 inference duration: tokenization excluded; includes synchronized distributed prefill and 32-token decode, and wait for the initial rank barrier. One TP=2 replica across two RTX 6000 hosts; isolated requests through OCF."
+  },
+  "publication": {
+    "run_date_utc": "2026-09-21",
+    "csv_columns": [
+      "request_id",
+      "prompt_id",
+      "success",
+      "end_to_end_latency_s"
+    ],
+    "omitted_csv_columns": [
+      "prompt_text"
+    ],
+    "description": "Public export of the completed native RTX Red run. Prompt text omitted; retained CSV values, metrics and plots unchanged. No new GPU experiment.",
+    "original_full_archive_sha256": "8a2ba7d2f230e5decbcee64b7594a3a67be299e391e2dd1e067caa885e4cae18",
+    "source_hashes_describe": "Frozen measured source; the PR subsequently makes paths and endpoints configurable. This is not a GPU run of the publication commit."
+  }
+}
