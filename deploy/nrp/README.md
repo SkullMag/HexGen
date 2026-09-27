@@ -34,8 +34,10 @@ Turing GPUs such as the Quadro RTX 6000.
 
 On one NRP RTX A6000, the pinned OpenLLaMA 7B v2 checkpoint completed a
 FlashAttention-enabled request after both packed-QKV and packed-KV CUDA kernel
-probes passed. This checks the kernel and single-GPU model path. The 70B and
-multi-node paths still need their own runs.
+probes passed. A subsequent [two-site 7B validation](validation/two-site-7b-2026-09-27/README.md)
+completed two requests across an RTX A6000 at UNL and an A10 at MGH with
+identical generated token IDs on both ranks. These validate the small model
+paths; the 70B layouts above still need their own runs.
 
 ## Build
 
