@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
-FROM --platform=linux/amd64 golang:1.20-bookworm AS ocf
+FROM golang:1.20-bookworm AS ocf
 WORKDIR /src
 COPY third_party/ocf/src/ocf-core/ ./
 RUN CGO_ENABLED=0 go build -trimpath -o /out/ocf-core ./bin/core
 
-FROM --platform=linux/amd64 pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=4 \
     HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
