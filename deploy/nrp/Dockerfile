@@ -21,14 +21,15 @@ RUN python -m pip install --no-cache-dir \
     'https://github.com/Dao-AILab/flash-attention/releases/download/v2.0.8/flash_attn-2.0.8%2Bcu117torch2.0cxx11abiFALSE-cp310-cp310-linux_x86_64.whl'
 # The release wheel omits fused_dense_lib, which HexGen needs for its tensor
 # parallel linear layers. Build that small upstream extension for the A6000/A10.
-RUN git clone --depth 1 --branch v2.0.8 --filter=blob:none --sparse \
-      https://github.com/Dao-AILab/flash-attention.git /tmp/flash-attention \
-    && cd /tmp/flash-attention \
-    && git sparse-checkout set csrc/fused_dense_lib \
+RUN curl -fsSL \
+      'https://codeload.github.com/Dao-AILab/flash-attention/tar.gz/2286d7cea7ca8264165c16b2442b6436c43140de' \
+      -o /tmp/flash-attention.tar.gz \
+    && echo '4191c09a10ddaefc139efe073e8ab5bdc732f65332e222c34d61c612f6bb8abb  /tmp/flash-attention.tar.gz' | sha256sum -c - \
+    && mkdir /tmp/flash-attention \
+    && tar -xzf /tmp/flash-attention.tar.gz -C /tmp/flash-attention --strip-components=1 \
     && MAX_JOBS=2 TORCH_CUDA_ARCH_LIST=8.6 python -m pip install \
-      --no-cache-dir --no-build-isolation ./csrc/fused_dense_lib \
-    && cd / \
-    && rm -rf /tmp/flash-attention
+      --no-cache-dir --no-build-isolation /tmp/flash-attention/csrc/fused_dense_lib \
+    && rm -rf /tmp/flash-attention /tmp/flash-attention.tar.gz
 RUN python -c 'from flash_attn.ops.fused_dense import FusedDense, ColumnParallelLinear; print("fused_dense_lib import OK")'
 COPY . /opt/hexgen
 COPY --from=ocf /out/ocf-core /usr/local/bin/ocf-core
