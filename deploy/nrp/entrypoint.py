@@ -44,7 +44,8 @@ def worker() -> int:
     upload_metadata(RESULTS, "worker", {"ranks": list(range(offset, offset + count)),
                                         "hetero_config": tp, "pp_partition": layers})
     base = [sys.executable, "_llama_worker.py", "--model_size", os.environ["MODEL_SIZE"],
-            "--mixed_precision", "fp16", "--fp16", "--num-layers", str(sum(layers)),
+            "--mixed_precision", "fp16", "--fp16", "--use-flash-attn",
+            "--num-layers", str(sum(layers)),
             "--num_hidden_layers", str(sum(layers)),
             "--max-position-embeddings", os.environ.get("SEQ_LENGTH", "2048"),
             "--seq-length", os.environ.get("SEQ_LENGTH", "2048"),

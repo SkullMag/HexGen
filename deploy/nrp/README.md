@@ -23,6 +23,20 @@ does not enforce geography. This setup targets a similar nominal 70B FP16
 weight-to-VRAM ratio in both arms. Real allocated memory and KV-cache headroom
 are measured by the per-rank JSONL logs and may differ.
 
+## FlashAttention compatibility
+
+The NRP workers enable [FlashAttention 2.0.8](https://github.com/Dao-AILab/flash-attention/blob/v2.0.8/README.md) for FP16 inference. The image pins
+PyTorch 2.0.1, CUDA 11.7, and the matching upstream FlashAttention wheel and
+builds its rotary and fused-dense helpers from the same release. The selected
+RTX A6000 and A10 GPUs both have [CUDA compute capability 8.6](https://developer.nvidia.com/cuda/gpus), within the
+release's Ampere support. Do not schedule this image's FlashAttention path on
+Turing GPUs such as the Quadro RTX 6000.
+
+On one NRP RTX A6000, the pinned OpenLLaMA 7B v2 checkpoint completed a
+FlashAttention-enabled request after both packed-QKV and packed-KV CUDA kernel
+probes passed. This checks the kernel and single-GPU model path. The 70B and
+multi-node paths still need their own runs.
+
 ## Build
 
 The same image contains the original HexGen worker/client, the OCF coordinator,

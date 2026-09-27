@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-cer
 WORKDIR /opt/hexgen
 COPY deploy/nrp/requirements-image.txt /tmp/requirements-image.txt
 RUN python -m pip install --no-cache-dir -r /tmp/requirements-image.txt
-# HexGen imports flash_attn model helpers even when its attention kernel is disabled.
-# This official 2.0.8 wheel matches the base image's cu117, torch 2.0, cp310,
-# and cxx11abiFALSE ABI; fail early if the base image is changed incompatibly.
+# FlashAttention 2.0.8 supports the image's CUDA 11.7 / PyTorch 2.0.1 stack
+# and the NRP A6000/A10 Ampere GPUs. Pin its official cu117, torch 2.0,
+# cp310, cxx11abiFALSE wheel and fail early on an incompatible base image.
 RUN python -c 'import sys, torch; assert sys.version_info[:2] == (3, 10); assert torch.__version__.startswith("2.0."); assert not torch._C._GLIBCXX_USE_CXX11_ABI'
 RUN python -m pip install --no-cache-dir \
     'https://github.com/Dao-AILab/flash-attention/releases/download/v2.0.8/flash_attn-2.0.8%2Bcu117torch2.0cxx11abiFALSE-cp310-cp310-linux_x86_64.whl'
@@ -32,7 +32,7 @@ RUN curl -fsSL \
     && MAX_JOBS=2 TORCH_CUDA_ARCH_LIST=8.6 python -m pip install \
       --no-cache-dir --no-build-isolation /tmp/flash-attention/csrc/rotary \
     && rm -rf /tmp/flash-attention /tmp/flash-attention.tar.gz
-RUN python -c 'from flash_attn.ops.fused_dense import FusedDense, ColumnParallelLinear; from flash_attn.layers.rotary import RotaryEmbedding; print("fused_dense_lib and rotary_emb imports OK")'
+RUN python -c 'from flash_attn import flash_attn_qkvpacked_func, flash_attn_kvpacked_func; from flash_attn.ops.fused_dense import FusedDense, ColumnParallelLinear; from flash_attn.layers.rotary import RotaryEmbedding; print("FlashAttention 2.0.8 attention and model helper imports OK")'
 COPY . /opt/hexgen
 COPY --from=ocf /out/ocf-core /usr/local/bin/ocf-core
 RUN python -m compileall -q deploy/nrp benchmark/hexgen_documents hexgen \
