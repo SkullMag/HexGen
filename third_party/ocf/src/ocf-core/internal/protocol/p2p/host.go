@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
+	p2phttp "github.com/libp2p/go-libp2p-http"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/protocol"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
@@ -41,7 +44,41 @@ func GetP2PNode() host.Host {
 	return *P2PNode
 }
 
+// Only the native HTTP protocol receives an explicit, bounded override.
+// A zero stream setting preserves libp2p's original autoscaled defaults.
+func httpResourceOption(streams, memoryMiB int) (libp2p.Option, error) {
+	if streams == 0 {
+		return nil, nil
+	}
+	if streams < 1 || streams > 4096 || memoryMiB < 16 || memoryMiB > 4096 {
+		return nil, fmt.Errorf("invalid p2p HTTP resource limits: streams must be 1..4096 and memory MiB 16..4096")
+	}
+	defaults := rcmgr.DefaultLimits
+	libp2p.SetDefaultServiceLimits(&defaults)
+	limits := rcmgr.PartialLimitConfig{
+		ProtocolPeer: map[protocol.ID]rcmgr.ResourceLimits{
+			p2phttp.DefaultP2PProtocol: {
+				Streams:         rcmgr.LimitVal(streams),
+				StreamsInbound:  rcmgr.LimitVal(streams),
+				StreamsOutbound: rcmgr.LimitVal(streams),
+				Memory:          rcmgr.LimitVal64(int64(memoryMiB) << 20),
+			},
+		},
+	}.Build(defaults.AutoScale())
+	manager, err := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(limits))
+	if err != nil {
+		return nil, err
+	}
+	return libp2p.ResourceManager(manager), nil
+}
+
 func newHost(ctx context.Context, seed int64) (host.Host, error) {
+	streams := viper.GetInt("p2p.http_streams_per_peer")
+	memoryMiB := viper.GetInt("p2p.http_memory_mib_per_peer")
+	resourceOption, err := httpResourceOption(streams, memoryMiB)
+	if err != nil {
+		return nil, err
+	}
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater
 		400, // HighWater,
@@ -76,7 +113,7 @@ func newHost(ctx context.Context, seed int64) (host.Host, error) {
 		return nil, err
 	}
 
-	return libp2p.New(
+	options := []libp2p.Option{
 		libp2p.DefaultTransports,
 		libp2p.Identity(priv),
 		libp2p.ConnectionManager(connmgr),
@@ -91,5 +128,10 @@ func newHost(ctx context.Context, seed int64) (host.Host, error) {
 		libp2p.EnableRelay(),
 		libp2p.EnableHolePunching(),
 		libp2p.ForceReachabilityPublic(),
-	)
+	}
+	if resourceOption != nil {
+		options = append(options, resourceOption)
+		fmt.Printf("OCF HTTP protocol per-peer limits: inbound=%d outbound=%d total=%d memory_mib=%d\n", streams, streams, streams, memoryMiB)
+	}
+	return libp2p.New(options...)
 }

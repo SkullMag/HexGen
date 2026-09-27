@@ -2,6 +2,8 @@ import torch
 import argparse
 from loguru import logger
 import sys
+import json
+from pathlib import Path
 sys.path.insert(0, "..")
 sys.path.insert(0, '../utils')
 sys.path.insert(0, '../..')
@@ -50,6 +52,11 @@ class LlamaWorker(InferenceWorker):
             outputs, infer_time = inference(self.model, self.tokenizer, self.pp_groups, model_msg, self.args)
 
         clear_kv_cache()
+        if self.args.request_log:
+            record = dict(self.args.last_inference_metadata,
+                          request_id=msg.get('request_id'), prompt_id=msg.get('prompt_id'))
+            with Path(self.args.request_log).open('a') as f:
+                f.write(json.dumps(record) + '\n')
         return outputs, infer_time   
 
     def get_rank(self):
@@ -69,4 +76,3 @@ if __name__=="__main__":
     logger.info(f"Creating Decentralized-LLM-inference Worker, {args.rank}, with world size of {args.world_size}")
     worker = LlamaWorker(model_name=model_name, head_node=head_node, args=args)
     worker.start()
-

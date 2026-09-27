@@ -17,7 +17,7 @@ type InferenceResponse struct {
 	Data string `json:"data"`
 }
 
-func InferenceRequest(c *gin.Context) {	
+func InferenceRequest(c *gin.Context) {
 	var request structs.InferenceStruct
 	err := c.BindJSON(&request)
 	if err != nil {
@@ -62,20 +62,26 @@ func AutoInferenceRequest(c *gin.Context) {
 	if rrIndex < len(providers) {
 		scapegoat = providers[rrIndex]
 	} else {
-		// in case someone leave 
+		// in case someone leave
 		rrIndex = len(providers) - 1
 		scapegoat = providers[rrIndex]
 	}
 	rrIndex = (rrIndex + 1) % len(providers)
 	// now forward request to scapegoat
 	res, err := requests.ForwardInferenceRequest(scapegoat.PeerID, request)
+	writeForwardedInferenceResponse(c, res, err)
+}
+
+func writeForwardedInferenceResponse(c *gin.Context, res string, err error) {
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	var response InferenceResponse
 	err = json.Unmarshal([]byte(res), &response)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(200, gin.H{"message": "ok", "data": response.Data})
 }

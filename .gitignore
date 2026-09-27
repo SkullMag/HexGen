@@ -1,2 +1,8 @@
 __pycache__
 .DS_Store
+
+# Local experiment assets; publish only reviewed result exports without prompts.
+/benchmark/native_7b/runs/
+.env
+*.pem
+*.key

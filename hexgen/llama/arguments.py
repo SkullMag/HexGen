@@ -2,6 +2,12 @@ import argparse
 
 def add_arguments(parser):
     group = parser.add_argument_group(title='hexgen arguments')
+    group.add_argument('--checkpoint-path', type=str, default=None,
+                       help='Hugging Face checkpoint directory for config and tokenizer.')
+    group.add_argument('--state-dicts-path', type=str, default='./load_model_parameters_utils/',
+                       help='Directory containing converted layer weights and inv_freq.pt.')
+    group.add_argument('--request-log', type=str, default=None,
+                       help='Optional per-rank JSONL inference measurements.')
 
     # hetro parallelism arguments
     group.add_argument(

@@ -1,10 +1,11 @@
 import os
+import argparse
 import torch
 import sys
 sys.path.insert(0, '..')
 sys.path.insert(0, '../site-package')
 from llama_config_utils import llama_config_to_gpt2_config, config_from_checkpoint, overwrite_configs_and_args
-from transformers import LlamaForCausalLM, LlamaTokenizer
+from transformers import LlamaForCausalLM, LlamaTokenizer, LlamaConfig
 from remap_state_dict import remap_state_dict_hf_llama
 
 def load_remapped_state_dict(config, checkpoint_path):
@@ -40,9 +41,13 @@ def save_model_components(config_path, checkpoint_name, checkpoint_path, num_lay
     """
 
     # Configuration and state dictionary loading
-    llama_config = config_from_checkpoint(config_path, checkpoint_name)
+    llama_config = LlamaConfig.from_pretrained(checkpoint_path)
     config = llama_config_to_gpt2_config(llama_config)
     state_dict = load_remapped_state_dict(config, checkpoint_path)
+    os.makedirs(save_dir, exist_ok=True)
+    head_dim = llama_config.hidden_size // llama_config.num_attention_heads
+    inv_freq = 1.0 / (llama_config.rope_theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
+    torch.save(inv_freq, os.path.join(os.path.dirname(save_dir), 'inv_freq.pt'))
 
     # Saving specific components of the state dictionary to separate files
     torch.save(state_dict['transformer.embeddings.word_embeddings.weight'], f'{save_dir}/embeddings.pt')
@@ -56,6 +61,10 @@ def save_model_components(config_path, checkpoint_name, checkpoint_path, num_lay
         torch.save(layer_state_dict, f'{save_dir}/layer_{idx}.pt')
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--checkpoint-path', default='../../../../Llama-2-7b-chat-hf/')
+    parser.add_argument('--save-dir', default='./separate_state_dicts/')
+    args = parser.parse_args()
     # Generate model separate state_dicts
     if not os.path.exists("./separate_state_dicts"):
         os.mkdir("./separate_state_dicts")
@@ -63,9 +72,9 @@ def main():
     save_model_components(
         config_path='../llama-config/',
         checkpoint_name='llama-7b',
-        checkpoint_path='../../../../Llama-2-7b-chat-hf/',
-        num_layers=32,
-        save_dir='./separate_state_dicts/'
+        checkpoint_path=args.checkpoint_path,
+        num_layers=LlamaConfig.from_pretrained(args.checkpoint_path).num_hidden_layers,
+        save_dir=args.save_dir
     )
 
 if __name__ == "__main__":

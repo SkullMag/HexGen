@@ -125,6 +125,8 @@ class InferenceWorker():
         loop.close()
 
     def set_addr(self):
+        if os.environ.get('OCF_WORKER_ADDR'):
+            return os.environ['OCF_WORKER_ADDR']
         try:         
             addr = os.environ['MASTER_ADDR']
         except KeyError:

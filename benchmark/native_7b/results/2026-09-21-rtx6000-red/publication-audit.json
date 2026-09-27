@@ -1,0 +1,135 @@
+{
+  "passed": true,
+  "requests": 3500,
+  "rates": 7,
+  "scope": "Publication checks against the previously audited completed native run. Raw native rank logs and prompt text remain local; full inference validation requires that retained evidence.",
+  "checks": [
+    "Original 22-file ZIP integrity and recorded SHA-256",
+    "500 unique successful requests per rate and identical prompt order",
+    "Both native ranks agree on all 32 generated token IDs",
+    "Retained CSV cells exactly match original CSV and raw latencies",
+    "Recomputed median, interpolated p95, throughput, SLO percentages and peak allocated memory",
+    "Metrics and plot bytes unchanged; overview matches recorded SHA-256",
+    "Public ZIP contains exactly 22 files matching published files",
+    "Published directories enumerate runs 01 through 07; all 21 measurement/metric/plot files remain byte-identical after renaming"
+  ],
+  "original_full_archive_sha256": "8a2ba7d2f230e5decbcee64b7594a3a67be299e391e2dd1e067caa885e4cae18",
+  "original_full_audit_sha256": "ad329d7112f75553617ddaee5b623ba82997aabaa15efc2b437f2fd207ea488c",
+  "public_archive": "red-results-no-prompts.zip",
+  "public_archive_sha256": "55d24cf9f30e697284abaf9ae2fd0789661964fdbe1c282d56227e85dd36de77",
+  "public_archive_bytes": 502339,
+  "omitted_columns": [
+    "prompt_text"
+  ],
+  "csv_columns": [
+    "request_id",
+    "prompt_id",
+    "success",
+    "end_to_end_latency_s"
+  ],
+  "rates_evidence": {
+    "01_32_0.125_red": {
+      "offered_requests_per_second": 0.125,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "fb4af20783fb679b29ea0118fee551f987673f6a9116f8fcbeeefeedddae180a",
+      "original_csv_sha256": "5936d6e57879150a713946da9566fbdd0c71b088a95e426673f0fd38b5b959b0",
+      "published_csv_sha256": "b27fbea3aae94481ba536f600fffac52364f192fa7f1283283a5b0e146967c0d",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "13_32_0.125_red"
+    },
+    "02_32_0.25_red": {
+      "offered_requests_per_second": 0.25,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "d1a3739c0c522b0e490aa6e690084d6cd7cebf5e0aad569de3431110240405df",
+      "original_csv_sha256": "bbef3fd954a2f1fa2296674ed6dd5743119528a38cdfc7db2f3f964dc7483fd6",
+      "published_csv_sha256": "6b7cb889e1e93e7ec0251997b5743a5bc97cfc90d7d42e4fc2c11c21c19ff4bc",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "11_32_0.25_red"
+    },
+    "03_32_0.5_red": {
+      "offered_requests_per_second": 0.5,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "f8c4ea4e39688dde952d8e344de70b4243f981295f966e9dc90e6893fdc8fc25",
+      "original_csv_sha256": "af99c20b593bcf8995e0055dc62a636b913354c424bca535b343305b4c66a2de",
+      "published_csv_sha256": "da256c8994a34e7bfc88630e6cb43e85aa6d3c4bceee7385b9be4d319c443ccf",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "09_32_0.5_red"
+    },
+    "04_32_01_red": {
+      "offered_requests_per_second": 1,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "373cd7d659e8ba05d19a9376b396da97d89e8c7a25fc307112fc42275331b27d",
+      "original_csv_sha256": "8c3d982fe3fd4ddadc1927f93cb19177545e7ea0ba5f915427c290fc1b805598",
+      "published_csv_sha256": "b54e34f171cd23e9e6c1bc954b6db41d46475a0854be84000dcc5f1c1bc5b766",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "07_32_01_red"
+    },
+    "05_32_02_red": {
+      "offered_requests_per_second": 2,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "cc466e207c550e6364bb0858a118e976b22a5067774a5e6e28e39071a06792b1",
+      "original_csv_sha256": "0bf8a9517a737de85a24a3c4117b845abcf7319523caabeba75292d0510a2720",
+      "published_csv_sha256": "95d6c89d6db0f9d63abd1c0e9d006466686f33557cc05b49820a9794972257c3",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "05_32_02_red"
+    },
+    "06_32_04_red": {
+      "offered_requests_per_second": 4,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "4b580fac42a903f4ff9432d7ffe1719d08310498c8b866f0e14b2493678fa791",
+      "original_csv_sha256": "8083bac19807878cbbbc5c98b7fcd83100577d0d440a66b00013f90caf59d17f",
+      "published_csv_sha256": "0e5fb397ec26cc86e5835222acbf2b8e1d5c3d4a5a9c600c633a4f9cf395f433",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "03_32_04_red"
+    },
+    "07_32_08_red": {
+      "offered_requests_per_second": 8,
+      "requests": 500,
+      "original_requests_jsonl_sha256": "765e400b8bbd103b3c6d63f2527ba76fe4277969d87605f2489b9dff93675cf2",
+      "original_csv_sha256": "7983ab0f6a78486a136dd3ca57d4427415ae8573b026816452ee31763e368aaf",
+      "published_csv_sha256": "7744b4c40e74f315eda9f3823bf651f2a444ef3c53e4a80a8e7326f53eaea98b",
+      "retained_csv_values_unchanged": true,
+      "metrics_and_plot_unchanged": true,
+      "original_directory": "01_32_08_red"
+    }
+  },
+  "file_sha256": {
+    "01_32_0.125_red/metrics.json": "a50fab6661a9e332752c5f2ed797104ecb8222b3e4caae4dff7be2df229002fe",
+    "01_32_0.125_red/plot.png": "0053bf236f84ce4439fad396bf44710e1bffe905c8a9a78299aacc54871b83a2",
+    "01_32_0.125_red/requests.csv": "b27fbea3aae94481ba536f600fffac52364f192fa7f1283283a5b0e146967c0d",
+    "02_32_0.25_red/metrics.json": "c93f600e78ccaeb0e447c259958711dbc80b0a34eac64b136ff65ec776efec6a",
+    "02_32_0.25_red/plot.png": "812e8267d500ef534309b7975deec174f0fddd097e905644c96633bf71dcdcac",
+    "02_32_0.25_red/requests.csv": "6b7cb889e1e93e7ec0251997b5743a5bc97cfc90d7d42e4fc2c11c21c19ff4bc",
+    "03_32_0.5_red/metrics.json": "dc4c7da7bf46f99881dc8d6121d403ef900177e341d219000fffcc9accd646eb",
+    "03_32_0.5_red/plot.png": "7585fb94a7eb8eb0bcbe2398057fe085e172598732ccbf0406a8a9ed8367ce2c",
+    "03_32_0.5_red/requests.csv": "da256c8994a34e7bfc88630e6cb43e85aa6d3c4bceee7385b9be4d319c443ccf",
+    "04_32_01_red/metrics.json": "ba7b9568783a40e41df1e307551c325a6d896893aac40f19d5f49e4d0044fa8c",
+    "04_32_01_red/plot.png": "6771bcbe074609cdb523fb847a5e549a813223e5504dff980bd1a599911dec10",
+    "04_32_01_red/requests.csv": "b54e34f171cd23e9e6c1bc954b6db41d46475a0854be84000dcc5f1c1bc5b766",
+    "05_32_02_red/metrics.json": "74dd1af36310a9db0f8a63425b3bbb7718b3d638c3eb23492a726e8eefd863be",
+    "05_32_02_red/plot.png": "3de3af563540e846dd4eaa25e2cdd914b7c6ced743d24f10c41c4795fa3bb218",
+    "05_32_02_red/requests.csv": "95d6c89d6db0f9d63abd1c0e9d006466686f33557cc05b49820a9794972257c3",
+    "06_32_04_red/metrics.json": "1fd07f4d021b0aabdc12a27e35aa4b77053f9965e71cb29619e31c95255584ab",
+    "06_32_04_red/plot.png": "a9b8a24c713a252877d3c2233b5afd10787f230f09d638175630a03f5e23072b",
+    "06_32_04_red/requests.csv": "0e5fb397ec26cc86e5835222acbf2b8e1d5c3d4a5a9c600c633a4f9cf395f433",
+    "07_32_08_red/metrics.json": "d4f0afa97b4fad6587487f82c8c17845e99ffc3277a23e3c1b385b4e38791383",
+    "07_32_08_red/plot.png": "83b4b71bed158b160c9da4d2c8a7f52e941f89c028fa544a36f155eacf705e23",
+    "07_32_08_red/requests.csv": "7744b4c40e74f315eda9f3823bf651f2a444ef3c53e4a80a8e7326f53eaea98b",
+    "setup.json": "f07fd47e759b8c41456a8e521571c74b9abdf571dc0aae2faf01aee711d2f507"
+  },
+  "overview_sha256": "66e4d9d84c3f2ab1622c08889612b57de84807f7dd58862bb296b28a8aa4a244",
+  "publication_visual_review_complete": true,
+  "publication_visual_review_utc": "2026-09-23T14:51:36.700805+00:00",
+  "public_text_scan_passed": true,
+  "directory_renumbering": {
+    "numbering": "Ascending offered request rate, 1 through 7",
+    "request_ids_unchanged": true,
+    "original_evidence_unchanged": true
+  }
+}
