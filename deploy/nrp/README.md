@@ -93,38 +93,45 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
 
 1. Confirm a namespace with permission to create Services, Jobs, ConfigMaps,
    PVCs, and Secrets and with current capacity for each requested GPU type.
-2. Obtain legal access to the Llama 2 70B Hugging Face checkpoint. Stage the
-   same pinned revision at `/model/checkpoint` on the model volumes, including
-   config and tokenizer. Prepare HexGen's converted layer files at
-   `/model/converted/separate_state_dicts/` and
-   `/model/converted/inv_freq.pt`. Use the repository's
-   `hexgen/llama/load_model_parameters_utils/create_separate_state_dicts_llama_7b.py`
-   converter with `--checkpoint-path` and
-   `--save-dir /model/converted/separate_state_dicts`; despite its filename it
-   takes the layer count from the model config. Conversion of 70B has not yet
-   been validated and needs substantial CPU RAM and disk. Check the output before
-   scheduling GPUs.
-3. Prepare a fixed LMSYS prompt bank with the Llama 2 tokenizer after accepting
-   the dataset's access terms. Download the pinned Parquet revision shown below
-   to a local path, then run (without committing its prompt contents):
+2. Obtain access to both gated Hugging Face repositories:
+   `meta-llama/Llama-2-70b-hf` and `lmsys/chatbot_arena_conversations`.
+   With approval to use the locally saved HF token, run
+   `python3 deploy/nrp/setup_hf_secret.py --use-saved-token`; otherwise run it
+   without that flag and enter a separate read token at its hidden prompt.
+   It checks both access grants with HEAD requests, then installs only the token
+   in the private `hexgen-hf-token` Kubernetes Secret. No model files are
+   downloaded onto the submitting machine.
+3. Create the homogeneous model volume on the UNL site:
 
    ```sh
-   python3 -m pip install -r benchmark/native_7b/requirements-cpu.txt
-   python3 deploy/nrp/prepare_prompt_bank.py \
-     --dataset-file /path/to/train-00000-of-00001-cced8514c7ed782a.parquet \
-     --dataset-sha256 3726a6352e9bfc34e206460646f6e5e99bb837751966a671ddd30c7f64e5b06e \
-     --tokenizer-path /path/to/pinned/Llama-2-70b-hf \
-     --model-revision YOUR_PINNED_HF_COMMIT \
-     --output /path/to/staging/prompt_bank.json
+   kubectl --context=nautilus -n nyu-networks apply -f deploy/nrp/model-pvc-central.yaml
    ```
 
-   The dataset revision is `1b6335d42a1d2c7e34870c905d03ab964f7f2bd8`.
-   Record the printed prompt-bank hash and verify it is the same for both arms.
-4. Provide namespace PVCs `hexgen-model-unl` and `hexgen-model-mgh`, with the
-   same pinned checkpoint and converted files at the paths above. Put the
-   frozen prompt bank on the UNL PVC at `/model/workload/prompt_bank.json`.
-   Verify each PVC can mount at its selected site. The centralized arm only
-   needs the UNL PVC.
+   This 350 GiB `linstor-unl` ReadWriteOnce volume is mounted by both
+   homogeneous Jobs on the same pinned UNL node. A two-pod mount test passed.
+   NRP Linstor allocates requested capacity, so expand only if the checkpoint
+   plus converted layer files approach the limit. The geographically separated
+   arm will need another volume at MGH.
+4. Stage inputs **on NRP**, using a CPU-only Job pinned to the UNL GPU node.
+   It uses the pinned Llama 2 revision
+   `3aba440b59558f995867ba6e1f58f21d0336b5bb`, downloads only the
+   safetensors checkpoint and tokenizer to `/model/checkpoint`, downloads the
+   pinned LMSYS Parquet to `/model/workload`, builds
+   `/model/workload/prompt_bank.json`, and converts one layer at a time into
+   `/model/converted`. The converter was checked against HexGen's original
+   remapping on a synthetic GQA model. The actual 70B load is still untested.
+
+   ```sh
+   IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
+   python3 deploy/nrp/stage.py apply --image "$IMAGE"
+   kubectl --context=nautilus -n nyu-networks wait \
+     --for=condition=complete job/hexgen-nrp-stage-central-llama70b --timeout=12h
+   ```
+
+   Check the staging Job logs and the checkpoint, prompt-bank, and conversion
+   markers before requesting GPUs. The dataset revision is
+   `1b6335d42a1d2c7e34870c905d03ab964f7f2bd8`; record the prompt-bank
+   SHA-256 for both comparison arms.
 5. Get an [NRP S3 token](https://nrp.ai/s3token/) for the West pool, then run
    the setup helper from a private terminal with `boto3` installed. It prompts
    without echoing the keys, creates a bucket, verifies an upload and readback,
@@ -140,7 +147,21 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
 
 ## Render and submit
 
-Run these from the repository root, using the SHA tag created by the image build:
+First run a one-request homogeneous smoke test from the repository root, using
+the SHA tag created by the image build. After deleting the smoke Jobs, verify
+a successful client result and four rank logs in S3 before starting the sweep:
+
+```sh
+IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
+python3 deploy/nrp/run.py apply --variant centralized --run-id central-smoke-001 \
+  --image "$IMAGE" --requests 1 --rates '0.125' --warmups 0 --new-tokens 8
+kubectl --context=nautilus -n nyu-networks wait \
+  --for=condition=complete job/hexgen-nrp-central-client-central-smoke-001 --timeout=60m
+python3 deploy/nrp/run.py delete --variant centralized --run-id central-smoke-001 \
+  --image "$IMAGE"
+```
+
+Then run the full six-rate, 100-request-per-rate sweep:
 
 ```sh
 IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"

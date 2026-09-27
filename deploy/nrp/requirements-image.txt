@@ -7,6 +7,7 @@ ninja>=1.11,<2
 numpy<2
 packaging>=23,<26
 pandas>=2,<3
+pyarrow==18.1.0
 protobuf>=4,<6
 pynvml>=11,<13
 regex>=2023.10
