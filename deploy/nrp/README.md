@@ -125,21 +125,18 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
    frozen prompt bank on the UNL PVC at `/model/workload/prompt_bank.json`.
    Verify each PVC can mount at its selected site. The centralized arm only
    needs the UNL PVC.
-5. Create a bucket using an [NRP S3 token](https://nrp.ai/s3token/). Create the
-   Kubernetes Secret `hexgen-nrp-s3` with keys `AWS_ACCESS_KEY_ID`,
-   `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, and `S3_ENDPOINT_URL`. Example, using
-   local environment variables without writing credentials to this repository:
+5. Get an [NRP S3 token](https://nrp.ai/s3token/) for the West pool, then run
+   the setup helper from a private terminal with `boto3` installed. It prompts
+   without echoing the keys, creates a bucket, verifies an upload and readback,
+   and installs the `hexgen-nrp-s3` Secret in `nyu-networks`:
 
    ```sh
-   kubectl --context=nautilus -n nyu-networks create secret generic hexgen-nrp-s3 \
-     --from-literal=AWS_ACCESS_KEY_ID="$NRP_S3_ACCESS_KEY_ID" \
-     --from-literal=AWS_SECRET_ACCESS_KEY="$NRP_S3_SECRET_ACCESS_KEY" \
-     --from-literal=S3_BUCKET="$NRP_S3_BUCKET" \
-     --from-literal=S3_ENDPOINT_URL="https://s3-west.nrp-nautilus.io"
+   python3 deploy/nrp/setup_s3.py
    ```
 
-   Protect your shell history and environment. Use the matching endpoint for
-   the bucket's NRP pool. Never commit a token or the resulting Secret YAML.
+   Use `--endpoint` for another NRP pool and `--bucket` to reuse a bucket.
+   The Secret contains `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+   `S3_BUCKET`, and `S3_ENDPOINT_URL`. Never commit the token or Secret YAML.
 
 ## Render and submit
 
