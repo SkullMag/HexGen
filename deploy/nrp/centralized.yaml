@@ -16,17 +16,14 @@ spec:
     port: 29511
     targetPort: 29511
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: hexgen-nrp-central-head
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: hexgen-nrp-central-head
+  backoffLimit: 0
+  activeDeadlineSeconds: 14400
+  ttlSecondsAfterFinished: 86400
   template:
     metadata:
       labels:
@@ -137,6 +134,8 @@ spec:
             cpu: '14'
             memory: 172Gi
             nvidia.com/rtxa6000: '4'
+      restartPolicy: Never
+      priorityClassName: opportunistic
 ---
 apiVersion: batch/v1
 kind: Job
@@ -176,7 +175,17 @@ spec:
         - name: WARMUPS
           value: '3'
         - name: REQUESTS
-          value: '20'
+          value: '100'
+        - name: PROMPTS_FILE
+          value: /model/workload/prompt_bank.json
+        - name: RATES
+          value: 0.125 0.25 0.5 1 2 4
+        - name: NEW_TOKENS
+          value: '32'
+        - name: ARRIVAL_SEED
+          value: '20260919'
+        - name: REQUEST_TIMEOUT_S
+          value: '1800'
         resources:
           requests:
             cpu: '1'
@@ -184,3 +193,17 @@ spec:
           limits:
             cpu: '1'
             memory: 2Gi
+        volumeMounts:
+        - name: model
+          mountPath: /model
+          readOnly: true
+      priorityClassName: opportunistic
+      nodeSelector:
+        kubernetes.io/hostname: hcc-prp-c5038.unl.edu
+        topology.kubernetes.io/region: us-central
+      volumes:
+      - name: model
+        persistentVolumeClaim:
+          claimName: hexgen-model-unl
+  activeDeadlineSeconds: 7200
+  ttlSecondsAfterFinished: 86400

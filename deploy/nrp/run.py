@@ -16,20 +16,23 @@ def kubectl(args: list[str], context: str, namespace: str, data: str | None = No
                           input=data, text=True, check=True)
 
 
-def render(variant: str, run_id: str, image: str) -> list[dict]:
+def render(variant: str, run_id: str, image: str, arrival_seed: int = 20260919) -> list[dict]:
     documents = list(yaml.safe_load_all((HERE / "common.yaml").read_text()))
     documents += list(yaml.safe_load_all((HERE / f"{variant}.yaml").read_text()))
     for document in documents:
         if document["kind"] == "Job":
             document["metadata"]["name"] += f"-{run_id}"
         containers = document.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
-        if document["kind"] == "Deployment":
-            containers = document["spec"]["template"]["spec"]["containers"]
         for container in containers:
             container["image"] = image
+            if container.get("env") is not None:
+                container["env"] = [env for env in container["env"] if env["name"] != "IMAGE_REF"]
+                container["env"].append({"name": "IMAGE_REF", "value": image})
             for env in container.get("env", []):
                 if env["name"] == "RUN_ID":
                     env["value"] = run_id
+                if env["name"] == "ARRIVAL_SEED":
+                    env["value"] = str(arrival_seed)
     return documents
 
 
@@ -39,20 +42,22 @@ def main():
     parser.add_argument("--variant", choices=["centralized", "decentralized"], required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--image", required=True, help="Immutable GHCR digest or unique SHA tag")
+    parser.add_argument("--arrival-seed", type=int, default=20260919,
+                        help="Use the same seed for both arms of one paired run")
     parser.add_argument("--context", default="nautilus")
     parser.add_argument("--namespace", default="nyu-networks")
     args = parser.parse_args()
     if not re.fullmatch(r"[a-z0-9]([-a-z0-9]{0,30}[a-z0-9])?", args.run_id):
         parser.error("run-id must be a short DNS-safe lowercase label")
-    documents = render(args.variant, args.run_id, args.image)
+    documents = render(args.variant, args.run_id, args.image, args.arrival_seed)
     data = yaml.safe_dump_all(documents, sort_keys=False)
     if args.action == "render":
         print(data, end="")
         return
     if args.action == "apply":
         required_pvcs = {v["persistentVolumeClaim"]["claimName"]
-                         for doc in documents if doc["kind"] == "Deployment"
-                         for v in doc["spec"]["template"]["spec"]["volumes"]
+                         for doc in documents if doc["kind"] == "Job"
+                         for v in doc["spec"]["template"]["spec"].get("volumes", [])
                          if "persistentVolumeClaim" in v}
         for kind, name in [("secret", "hexgen-nrp-s3"),
                            *(("pvc", name) for name in sorted(required_pvcs))]:
