@@ -19,8 +19,8 @@ RUN python -m pip install --no-cache-dir -r /tmp/requirements-image.txt
 RUN python -c 'import sys, torch; assert sys.version_info[:2] == (3, 10); assert torch.__version__.startswith("2.0."); assert not torch._C._GLIBCXX_USE_CXX11_ABI'
 RUN python -m pip install --no-cache-dir \
     'https://github.com/Dao-AILab/flash-attention/releases/download/v2.0.8/flash_attn-2.0.8%2Bcu117torch2.0cxx11abiFALSE-cp310-cp310-linux_x86_64.whl'
-# The release wheel omits fused_dense_lib, which HexGen needs for its tensor
-# parallel linear layers. Build that small upstream extension for the A6000/A10.
+# The release wheel omits the fused dense and rotary extensions used by HexGen.
+# Build them from the same upstream revision for the A6000/A10.
 RUN curl -fsSL \
       'https://codeload.github.com/Dao-AILab/flash-attention/tar.gz/2286d7cea7ca8264165c16b2442b6436c43140de' \
       -o /tmp/flash-attention.tar.gz \
@@ -29,10 +29,12 @@ RUN curl -fsSL \
     && tar -xzf /tmp/flash-attention.tar.gz -C /tmp/flash-attention --strip-components=1 \
     && MAX_JOBS=2 TORCH_CUDA_ARCH_LIST=8.6 python -m pip install \
       --no-cache-dir --no-build-isolation /tmp/flash-attention/csrc/fused_dense_lib \
+    && MAX_JOBS=2 TORCH_CUDA_ARCH_LIST=8.6 python -m pip install \
+      --no-cache-dir --no-build-isolation /tmp/flash-attention/csrc/rotary \
     && rm -rf /tmp/flash-attention /tmp/flash-attention.tar.gz
-RUN python -c 'from flash_attn.ops.fused_dense import FusedDense, ColumnParallelLinear; print("fused_dense_lib import OK")'
+RUN python -c 'from flash_attn.ops.fused_dense import FusedDense, ColumnParallelLinear; from flash_attn.layers.rotary import RotaryEmbedding; print("fused_dense_lib and rotary_emb imports OK")'
 COPY . /opt/hexgen
 COPY --from=ocf /out/ocf-core /usr/local/bin/ocf-core
 RUN python -m compileall -q deploy/nrp benchmark/hexgen_documents hexgen \
-    && PYTHONPATH=/opt/hexgen/hexgen python -c 'from hexgen_core.models.gpt import RMSNorm; assert RMSNorm is not None'
+    && PYTHONPATH=/opt/hexgen/hexgen python -c 'from hexgen_core.models.gpt import RMSNorm; from hexgen_core.modules.mha import RotaryEmbedding; assert RMSNorm is not None and RotaryEmbedding is not None'
 ENTRYPOINT ["python", "/opt/hexgen/deploy/nrp/entrypoint.py"]
