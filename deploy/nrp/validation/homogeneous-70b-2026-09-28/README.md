@@ -45,10 +45,12 @@ NRP's device plugin reported a lost GPU. No GPU pods remain in `nyu-networks`.
    `GPU is lost`. Its unvalidated code override was removed.
 
 After these attempts, Kubernetes still marked the node Ready, but its
-`nvidia.com/rtxa6000` allocatable count fell from 7 to 5. The public resource
-table did not show another unreserved, healthy four-card 48 GiB node at the
-time of the check. The issue needs NRP node repair or another authorized
-four-card placement before a full FP16 70B benchmark can be trusted.
+`nvidia.com/rtxa6000` allocatable count fell from 7 to 5. At the final
+September 28 16:33 UTC check, both its GPU capacity and allocatable count
+were **0**. The public resource table did not show another unreserved,
+healthy four-card 48 GiB node at the time of the check. The issue needs NRP
+node repair or another authorized four-card placement before a full FP16 70B
+benchmark can be trusted.
 
 The Kubernetes Jobs, Services, and test ConfigMaps were deleted. The staged
 model PVC and successful diagnostic results in S3 were retained.
