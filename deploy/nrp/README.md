@@ -4,8 +4,9 @@ This is a small, capacity-matched comparison built on the native HexGen/OCF
 path. It contains one image, a centralized four-A6000 Job, and a geographically
 separated three-A6000 plus two-A10 layout. Both arms use one FP16 Llama 2 70B
 replica, the same frozen prompts and Poisson arrival trace, and the same S3
-record format. These are **unmeasured 70B configurations**. GPU allocation,
-model loading, and both end-to-end paths still need validation on NRP.
+record format. The [70B staging run](validation/homogeneous-70b-2026-09-27/README.md)
+completed on NRP. GPU model loading and both end-to-end 70B paths remain
+unmeasured.
 
 ## Layout
 
@@ -119,7 +120,8 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
    pinned LMSYS Parquet to `/model/workload`, builds
    `/model/workload/prompt_bank.json`, and converts one layer at a time into
    `/model/converted`. The converter was checked against HexGen's original
-   remapping on a synthetic GQA model. The actual 70B load is still untested.
+   remapping on a synthetic GQA model. The actual 70B checkpoint and all 80
+   converted layers were validated on NRP; the GPU model load is still untested.
 
    ```sh
    IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
@@ -148,12 +150,23 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
 ## Render and submit
 
 First run a one-request homogeneous smoke test from the repository root, using
-the SHA tag created by the image build. After deleting the smoke Jobs, verify
-a successful client result and four rank logs in S3 before starting the sweep:
+the SHA tag created by the image build. Submit the server Jobs first, because
+scarce GPU capacity can leave them Pending for an extended period. Submit the
+client only after every server pod is Ready; `run.py` checks that condition.
+After deleting the smoke Jobs, verify a successful client result and four rank
+logs in S3 before starting the sweep:
+
+If the server wait times out because GPUs are unavailable, delete that run's
+server Jobs before leaving it unattended; otherwise they can acquire GPUs later
+without a client.
 
 ```sh
 IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
-python3 deploy/nrp/run.py apply --variant centralized --run-id central-smoke-001 \
+python3 deploy/nrp/run.py apply --component servers --variant centralized --run-id central-smoke-001 \
+  --image "$IMAGE" --requests 1 --rates '0.125' --warmups 0 --new-tokens 8
+kubectl --context=nautilus -n nyu-networks wait \
+  --for=condition=Ready pod -l job-name=hexgen-nrp-central-head-central-smoke-001 --timeout=60m
+python3 deploy/nrp/run.py apply --component client --variant centralized --run-id central-smoke-001 \
   --image "$IMAGE" --requests 1 --rates '0.125' --warmups 0 --new-tokens 8
 kubectl --context=nautilus -n nyu-networks wait \
   --for=condition=complete job/hexgen-nrp-central-client-central-smoke-001 --timeout=60m
@@ -166,11 +179,19 @@ Then run the full six-rate, 100-request-per-rate sweep:
 ```sh
 IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
 python3 deploy/nrp/run.py render --variant centralized --run-id demo-001 --image "$IMAGE" > /tmp/hexgen-central.yaml
-python3 deploy/nrp/run.py apply --variant centralized --run-id demo-001 --image "$IMAGE"
+python3 deploy/nrp/run.py apply --component servers --variant centralized --run-id demo-001 --image "$IMAGE"
+kubectl --context=nautilus -n nyu-networks wait \
+  --for=condition=Ready pod -l job-name=hexgen-nrp-central-head-demo-001 --timeout=60m
+python3 deploy/nrp/run.py apply --component client --variant centralized --run-id demo-001 --image "$IMAGE"
 kubectl --context=nautilus -n nyu-networks wait --for=condition=complete job/hexgen-nrp-central-client-demo-001 --timeout=60m
 python3 deploy/nrp/run.py delete --variant centralized --run-id demo-001 --image "$IMAGE"
 
-python3 deploy/nrp/run.py apply --variant decentralized --run-id demo-001 --image "$IMAGE"
+python3 deploy/nrp/run.py apply --component servers --variant decentralized --run-id demo-001 --image "$IMAGE"
+kubectl --context=nautilus -n nyu-networks wait \
+  --for=condition=Ready pod -l job-name=hexgen-nrp-hetero-head-demo-001 --timeout=60m
+kubectl --context=nautilus -n nyu-networks wait \
+  --for=condition=Ready pod -l job-name=hexgen-nrp-hetero-east-demo-001 --timeout=60m
+python3 deploy/nrp/run.py apply --component client --variant decentralized --run-id demo-001 --image "$IMAGE"
 kubectl --context=nautilus -n nyu-networks wait --for=condition=complete job/hexgen-nrp-hetero-client-demo-001 --timeout=60m
 python3 deploy/nrp/run.py delete --variant decentralized --run-id demo-001 --image "$IMAGE"
 ```

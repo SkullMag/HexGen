@@ -19,9 +19,16 @@ def kubectl(args: list[str], context: str, namespace: str, data: str | None = No
 
 def render(variant: str, run_id: str, image: str, arrival_seed: int = 20260919,
            requests: int | None = None, rates: str | None = None,
-           warmups: int | None = None, new_tokens: int | None = None) -> list[dict]:
+           warmups: int | None = None, new_tokens: int | None = None,
+           component: str = "all") -> list[dict]:
     documents = list(yaml.safe_load_all((HERE / "common.yaml").read_text()))
     documents += list(yaml.safe_load_all((HERE / f"{variant}.yaml").read_text()))
+    if component == "servers":
+        documents = [doc for doc in documents
+                     if not doc["metadata"]["name"].endswith("-client")]
+    elif component == "client":
+        documents = [doc for doc in documents
+                     if doc["metadata"]["name"].endswith("-client")]
     for document in documents:
         if document["kind"] == "Job":
             document["metadata"]["name"] += f"-{run_id}"
@@ -47,6 +54,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["render", "apply", "delete"])
     parser.add_argument("--variant", choices=["centralized", "decentralized"], required=True)
+    parser.add_argument("--component", choices=["all", "servers", "client"],
+                        default="all", help="Submit servers first, then the client once pods are Ready")
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--image", required=True, help="Immutable GHCR digest or unique SHA tag")
     parser.add_argument("--arrival-seed", type=int, default=20260919,
@@ -76,12 +85,24 @@ def main():
         except ValueError:
             parser.error("rates must be a space-separated list of positive numbers")
     documents = render(args.variant, args.run_id, args.image, args.arrival_seed,
-                       args.requests, args.rates, args.warmups, args.new_tokens)
+                       args.requests, args.rates, args.warmups, args.new_tokens,
+                       args.component)
     data = yaml.safe_dump_all(documents, sort_keys=False)
     if args.action == "render":
         print(data, end="")
         return
     if args.action == "apply":
+        if args.component == "client":
+            server_jobs = {"centralized": ["hexgen-nrp-central-head"],
+                           "decentralized": ["hexgen-nrp-hetero-head",
+                                             "hexgen-nrp-hetero-east"]}
+            for name in server_jobs[args.variant]:
+                try:
+                    kubectl(["wait", "--for=condition=Ready", "pod", "-l",
+                             f"job-name={name}-{args.run_id}", "--timeout=1s"],
+                            args.context, args.namespace)
+                except subprocess.CalledProcessError:
+                    parser.error(f"Server pod for {name}-{args.run_id} is not Ready")
         required_pvcs = {v["persistentVolumeClaim"]["claimName"]
                          for doc in documents if doc["kind"] == "Job"
                          for v in doc["spec"]["template"]["spec"].get("volumes", [])
@@ -94,7 +115,7 @@ def main():
         for doc in documents:
             kubectl(["apply", "-f", "-"], args.context, args.namespace,
                     yaml.safe_dump(doc, sort_keys=False))
-        print(f"Submitted {args.variant} arm; raw results go under "
+        print(f"Submitted {args.variant} {args.component}; raw results go under "
               f"hexgen-nrp/{args.run_id}/{args.variant}/")
     else:
         kubectl(["delete", "-f", "-", "--ignore-not-found"],
