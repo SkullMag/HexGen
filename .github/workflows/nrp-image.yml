@@ -23,14 +23,7 @@ concurrency:
 jobs:
   image:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
-    strategy:
-      matrix:
-        include:
-          - dockerfile: deploy/nrp/Dockerfile
-            tag_prefix: nrp
-          - dockerfile: deploy/nrp/Dockerfile.hopper
-            tag_prefix: nrp-hopper
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -42,9 +35,9 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: deploy/nrp/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/skullmag/hexgen:${{ matrix.tag_prefix }}-${{ github.sha }}
+          tags: ghcr.io/skullmag/hexgen:nrp-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
