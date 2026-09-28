@@ -127,11 +127,11 @@ spec:
           mountPath: /results
         resources:
           requests:
-            cpu: '12'
+            cpu: '6'
             memory: 144Gi
             nvidia.com/rtxa6000: '4'
           limits:
-            cpu: '14'
+            cpu: '7'
             memory: 172Gi
             nvidia.com/rtxa6000: '4'
       restartPolicy: Never

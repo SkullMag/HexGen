@@ -5,8 +5,9 @@ path. It contains one image, a centralized four-A6000 Job, and a geographically
 separated three-A6000 plus two-A10 layout. Both arms use one FP16 Llama 2 70B
 replica, the same frozen prompts and Poisson arrival trace, and the same S3
 record format. The [70B staging run](validation/homogeneous-70b-2026-09-27/README.md)
-completed on NRP. GPU model loading and both end-to-end 70B paths remain
-unmeasured.
+completed on NRP. A [September 28 homogeneous 70B attempt](validation/homogeneous-70b-2026-09-28/README.md)
+validated one debug-mode request on four A6000s, but the six-rate benchmark
+was blocked by intermittent CUDA and GPU device-plugin failures.
 
 ## Layout
 
@@ -72,7 +73,7 @@ FlashAttention-enabled request after both packed-QKV and packed-KV CUDA kernel
 probes passed. A subsequent [two-site 7B validation](validation/two-site-7b-2026-09-27/README.md)
 completed two requests across an RTX A6000 at UNL and an A10 at MGH with
 identical generated token IDs on both ranks. These validate the small model
-paths; the 70B layouts above still need their own runs.
+paths; the 70B layouts above still need complete benchmark runs.
 
 ## Build
 
@@ -121,7 +122,9 @@ The Docker image does not contain model weights, prompts, or S3 credentials.
    `/model/workload/prompt_bank.json`, and converts one layer at a time into
    `/model/converted`. The converter was checked against HexGen's original
    remapping on a synthetic GQA model. The actual 70B checkpoint and all 80
-   converted layers were validated on NRP; the GPU model load is still untested.
+   converted layers were validated on NRP. A four-A6000 70B load and one
+   request later passed with CUDA debugging enabled, while normal startup
+   remained unstable; see the September 28 validation report above.
 
    ```sh
    IMAGE="ghcr.io/skullmag/hexgen:nrp-$(git rev-parse HEAD)"
