@@ -17,30 +17,22 @@ charges and do not include storage, network traffic, CPU/RAM differences,
 replica routing, or any multi-GPU-node premium. They establish a consistent
 cloud-equivalent GPU budget, not a prediction of a bill on another provider.
 RunPod's tabulated rates were verified 2026-08-10; its A4000 product page was
-updated 2026-08-27. Recheck before reporting a later experiment.
+updated 2026-08-27. Recheck before reporting a later experiment. GPU counts
+are the number on one unreserved NRP physical node, followed by the number of
+such nodes seen in the inventory. They do **not** indicate free GPUs.
 
-AWS and GCP columns are **informational instance proxies**, not inputs to the
-budget sums. AWS rates are us-east-1 on-demand instance-hours from AWS's May
-2026 example. GCP rates are the published on-demand G2 machine prices. GCP
-does not offer these 48 GB cards on G2: `g2-standard-24` contains **two 24 GB
-L4s**, not one 48 GB GPU. For the 24 GB and 16 GB NRP cards, the GCP proxy is
-one 24 GB L4. The AWS 48 GB proxy is one L40S; the 24/16 GB proxies are one
-A10G or L4. These are memory/architecture approximations, never performance
-equivalents. The first column's GPU count is NRP **per physical node**, whereas
-the AWS/GCP prices are for the named **one- or two-GPU instances**.
-
-| NRP GPU (nominal VRAM) | GPUs per unreserved NRP node; unreserved node count | RunPod $/GPU-h, budget basis | GCP proxy instance (GPU count) | GCP $/instance-h | AWS proxy instance (GPU count) | AWS $/instance-h |
-| --- | ---: | ---: | --- | ---: | --- | ---: |
-| RTX A4000 (16 GB) | 16; 2 | $0.25 | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g6.xlarge (1 L4, 24 GB) | $0.805 |
-| RTX A5000 (24 GB) | 1; 2 (also 4 on a reserved node) | $0.27 | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g5.xlarge (1 A10G, 24 GB) | $1.006 |
-| A10 (24 GB) | 7–8; 33 | n/a | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g5.xlarge (1 A10G, 24 GB) | $1.006 |
-| RTX 3090 (24 GB) | 1–8; 33 | $0.50 | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g5.xlarge (1 A10G, 24 GB) | $1.006 |
-| RTX 4090 (24 GB) | 4 or 8; 3 | $0.74 | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g6.xlarge (1 L4, 24 GB) | $0.805 |
-| L4 (24 GB) | 16; 2 | $0.49 | g2-standard-12 (1 L4, 24 GB) | $1.0004 | g6.xlarge (1 L4, 24 GB) | $0.805 |
-| A40 (48 GB) | 2; 2 (also 8 on an issue-tainted node) | $0.49 | g2-standard-24 (2 L4, 48 GB total) | $2.0008 | g6e.xlarge (1 L40S, 48 GB) | $1.861 |
-| RTX A6000 (48 GB) | 1, 4, 6, or 8; 5 | $0.53 | g2-standard-24 (2 L4, 48 GB total) | $2.0008 | g6e.xlarge (1 L40S, 48 GB) | $1.861 |
-| L40 (48 GB) | 4; 6 | $0.82 | g2-standard-24 (2 L4, 48 GB total) | $2.0008 | g6e.xlarge (1 L40S, 48 GB) | $1.861 |
-| L40S (48 GB) | 4; 2 | $1.09 | g2-standard-24 (2 L4, 48 GB total) | $2.0008 | g6e.xlarge (1 L40S, 48 GB) | $1.861 |
+| NRP GPU | Nominal VRAM per GPU | GPUs per unreserved NRP node | Unreserved NRP nodes | RunPod Secure Cloud $/GPU-hour |
+| --- | ---: | ---: | ---: | ---: |
+| RTX A4000 | 16 GB | 16 | 2 | $0.25 |
+| RTX A5000 | 24 GB | 1 (also 4 on a reserved node) | 2 | $0.27 |
+| A10 | 24 GB | 7–8 | 33 | n/a (not listed by RunPod) |
+| RTX 3090 | 24 GB | 1–8 | 33 | $0.50 |
+| RTX 4090 | 24 GB | 4 or 8 | 3 | $0.74 |
+| L4 | 24 GB | 16 | 2 | $0.49 |
+| A40 | 48 GB | 2 (also 8 on an issue-tainted node) | 2 | $0.49 |
+| RTX A6000 | 48 GB | 1, 4, 6, or 8 | 5 | $0.53 |
+| L40 | 48 GB | 4 | 6 | $0.82 |
+| L40S | 48 GB | 4 | 2 | $1.09 |
 
 All listed GPU architectures are Ampere or Ada, so they satisfy the upstream
 FlashAttention-2 architecture requirement. That is **hardware compatibility**,
@@ -88,9 +80,5 @@ memory-matched pilot, not a dollar-matched pair under this method.
   [NRP resource view](https://nrp.ai/viz/resources/) for a public live check.
 - [RunPod Secure Cloud GPU rate table](https://www.runpod.io/articles/guides/ai-server-cost)
   and [A4000 Secure Cloud rate](https://www.runpod.io/gpu-models/rtx-a4000).
-- [GCP G2 on-demand instance prices](https://cloud.google.com/products/compute/pricing/accelerator-optimized)
-  and [G2 GPU counts](https://docs.cloud.google.com/compute/docs/accelerator-optimized-machines).
-- [AWS on-demand example prices](https://aws.amazon.com/cn/blogs/china/inference-ai-agent-nvidia-nemoclaw-llm-router-amazon-ec2/)
-  and [AWS instance GPU specifications](https://docs.aws.amazon.com/ec2/latest/instancetypes/ac.html).
 - [HexGen paper, Section 5 and Appendix F](https://arxiv.org/html/2311.11514);
   [FlashAttention 2.0.8 upstream](https://github.com/Dao-AILab/flash-attention/tree/v2.0.8).
