@@ -26,9 +26,10 @@ are measured by the per-rank JSONL logs and may differ.
 
 Each arm has 192 GB of nominal GPU memory; FP16 weights alone are roughly
 140 GB, or 73% of that capacity. This matches **memory capacity**, not a verified
-hourly dollar budget. Before claiming cost parity, price the actual GPU types
-with one cloud-equivalent rate schedule and report each arm's total per-hour
-estimate. NRP capacity is shared, so advertised GPU count is not free capacity.
+hourly dollar budget: the A10 is absent from the single-provider rate schedule
+used in [the budget table](BUDGET.md). That table also gives several candidate
+70B comparison pairs with cloud-equivalent costs. NRP capacity is shared, so
+advertised GPU count is not free capacity.
 The Jobs use `opportunistic` priority and can be preempted. [NRP's GPU guidance](https://nrp.ai/documentation/userdocs/running/gpu-pods/)
 permits up to eight GPUs per node for Jobs; the four-GPU worker therefore runs
 as a Job rather than a Deployment.
