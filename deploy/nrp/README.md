@@ -25,11 +25,12 @@ weight-to-VRAM ratio in both arms. Real allocated memory and KV-cache headroom
 are measured by the per-rank JSONL logs and may differ.
 
 Each arm has 192 GB of nominal GPU memory; FP16 weights alone are roughly
-140 GB, or 73% of that capacity. This matches **memory capacity**, not a verified
-hourly dollar budget: the A10 is absent from the single-provider rate schedule
-used in [the budget table](BUDGET.md). That table also gives several candidate
-70B comparison pairs with cloud-equivalent costs. NRP capacity is shared, so
-advertised GPU count is not free capacity.
+140 GB, or 73% of that capacity. This matches **memory capacity**. Under the
+one-provider AWS proxy rates in [the budget table](BUDGET.md), the centralized
+arm is $7.444/hour and the A6000+A10 arm is $7.595/hour (+2.0%); those rates
+are for one-GPU AWS instances, not actual NRP charges. The table also gives
+alternative 70B comparison pairs. NRP capacity is shared, so advertised GPU
+count is not free capacity.
 The Jobs use `opportunistic` priority and can be preempted. [NRP's GPU guidance](https://nrp.ai/documentation/userdocs/running/gpu-pods/)
 permits up to eight GPUs per node for Jobs; the four-GPU worker therefore runs
 as a Job rather than a Deployment.
