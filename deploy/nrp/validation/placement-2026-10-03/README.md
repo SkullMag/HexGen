@@ -2,7 +2,7 @@
 
 This is a live scheduler check, not a 70B benchmark. It used the `nautilus`
 context and `nyu-networks` namespace. All temporary GPU Jobs were deleted by
-19:23 UTC; no GPU reservation or waiting Job remains.
+19:26 UTC; no GPU reservation or waiting Job remains.
 
 ## Inputs and constraints
 
@@ -35,6 +35,7 @@ briefly if scheduled. GPU requests equaled limits. None acquired a node.
 | Any eligible L40 node | 4 L40, 6 CPU, 144 GiB | No schedulable node; insufficient GPU or CPU |
 | Any eligible L40S node | 4 L40S, 6 CPU, 144 GiB | No schedulable node; insufficient GPU or CPU |
 | US West, two stages simultaneously | 2 A6000 and 2 A40; each 6 CPU, 84 GiB | Neither stage scheduled; insufficient GPU, CPU, or memory |
+| US East, two stages simultaneously | 4 A10 and 4 RTX 3090; each 6 CPU, 84 GiB | Neither stage scheduled; insufficient GPU, CPU, or memory |
 | Any eligible RTX A4000 node | 12 A4000, 6 CPU, 144 GiB | No schedulable node; insufficient GPU, CPU, or memory |
 
 These results describe only the tested requests at the time of the checks.

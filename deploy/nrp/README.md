@@ -4,7 +4,8 @@
 manifests is absent from the live node list. The latest
 [scheduler check](validation/placement-2026-10-03/README.md) found no
 schedulable placement among the tested four-A6000, eight-A10, eight-3090,
-four-L40/L40S, twelve-A4000, or two-A6000-plus-two-A40 layouts. Do not apply
+four-L40/L40S, twelve-A4000, two-A6000-plus-two-A40, or
+four-A10-plus-four-3090 layouts. Do not apply
 the pinned 70B manifests unchanged; select and test live hosts first. No 70B
 performance result was produced by that check.
 
