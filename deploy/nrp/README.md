@@ -1,5 +1,13 @@
 # NRP HexGen starter experiment
 
+**Current placement status (2026-10-03):** The host pinned in the 70B
+manifests is absent from the live node list. The latest
+[scheduler check](validation/placement-2026-10-03/README.md) found no
+schedulable placement among the tested four-A6000, eight-A10, eight-3090,
+four-L40/L40S, twelve-A4000, or two-A6000-plus-two-A40 layouts. Do not apply
+the pinned 70B manifests unchanged; select and test live hosts first. No 70B
+performance result was produced by that check.
+
 This is a small, capacity-matched comparison built on the native HexGen/OCF
 path. It contains one image, a centralized four-A6000 Job, and a geographically
 separated three-A6000 plus two-A10 layout. Both arms use one FP16 Llama 2 70B
