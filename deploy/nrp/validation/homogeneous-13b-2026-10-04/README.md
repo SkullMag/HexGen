@@ -34,12 +34,32 @@ PVC and S3 objects were retained.
 
 ## Full sweep
 
-Run ID `13b-a10-full-001` was submitted with the frozen default rates
-0.125, 0.25, 0.5, 1, 2, and 4 requests/second, 100 requests per rate, three
-warmups, 32 generated tokens, and arrival seed 20260919. The run is not
-complete until all six per-rate JSONL files, the summary, both rank logs, and
-S3 upload are verified. Its S3 prefix is
+Run ID `13b-a10-full-001` completed with the frozen default rates 0.125,
+0.25, 0.5, 1, 2, and 4 requests/second, 100 requests per rate, three warmups,
+32 generated tokens, and arrival seed 20260919. All 600 measured requests
+succeeded. The S3 summary, all six raw per-rate JSONL objects, and both ranks'
+JSONL and text logs were listed and read back after the run. The raw request
+files each contained exactly 100 successful records. The prompt-bank SHA-256
+in the S3 summary matched the staged bank:
+`ba0a6ab5367ff809b494be8b910edafc96d22d111a91227a58c1827adeb6b780`.
+
+| Offered requests/s | Successes | p50 end-to-end (s) | p95 end-to-end (s) |
+| ---: | ---: | ---: | ---: |
+| 0.125 | 100/100 | 1.449 | 3.767 |
+| 0.25 | 100/100 | 1.458 | 4.272 |
+| 0.5 | 100/100 | 2.747 | 5.834 |
+| 1 | 100/100 | 45.335 | 67.214 |
+| 2 | 100/100 | 95.999 | 116.213 |
+| 4 | 100/100 | 128.596 | 138.657 |
+
+Latency rose sharply at 1 request/second and above as requests queued. This
+single run establishes one homogeneous 13B reference; it does not by itself
+support a heterogeneous comparison or a confidence interval.
+
+Results are under
 `s3://hexgen-nrp-results-b97886564c50/hexgen-nrp/13b-a10-full-001/centralized-13b-a10-east/`.
+The GPU server Job was deleted after final rank-log upload; the West model PVC
+and S3 objects remain.
 
 This 13B single-replica homogeneous trial is separate from the planned 70B
 homogeneous/heterogeneous comparison.

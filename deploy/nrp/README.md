@@ -40,6 +40,9 @@ one East node. It mounts the already-complete West CephFS PVC read-only. A
 CPU-only mount test from an East A10 node verified the conversion marker and
 prompt bank were readable. An October 4 attempt to convert a second copy on
 East CephFS stalled on storage reads, so the incomplete East PVC was removed.
+The [October 4 A10 trial](validation/homogeneous-13b-2026-10-04/README.md)
+completed all six rates with 600/600 successful measured requests and verified
+raw S3 results.
 
 The published image currently contains an older sequential client that calls
 the proxy inference route. `run.py` mounts the current `client.py` from a
