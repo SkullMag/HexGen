@@ -42,11 +42,34 @@ completed 2/2 measured requests at 1 offered request/second, with one warmup
 and eight generated tokens. Client p50 was 1.474 seconds and p95 was 1.492
 seconds. The client uploaded raw `rate-1.jsonl` and `summary.json` to S3.
 
-The same server pair then began the frozen full sweep: six rates (0.125,
+The same server pair completed the frozen full sweep: six rates (0.125,
 0.25, 0.5, 1, 2, 4 requests/second), 100 requests per rate, three warmups,
-32 generated tokens, and arrival seed 20260919. Its client is a separate Pod
-under the same run ID; the S3 pod subdirectories distinguish smoke and full
-records. Full-run completion and final S3 verification remain pending.
+32 generated tokens, and arrival seed 20260919. All 600 measured requests
+succeeded. Its client was a separate Pod
+`hexgen-nrp-13b-hetero-client-13b-hetero-ada-smoke-001-5dw5f` under the same
+run ID; the S3 pod subdirectories distinguish smoke and full records.
+
+| Offered requests/s | Successes | p50 end-to-end (s) | p95 end-to-end (s) |
+| ---: | ---: | ---: | ---: |
+| 0.125 | 100/100 | 5.410 | 18.151 |
+| 0.25 | 100/100 | 92.999 | 146.750 |
+| 0.5 | 100/100 | 250.835 | 306.148 |
+| 1 | 100/100 | 365.905 | 406.767 |
+| 2 | 100/100 | 258.954 | 434.709 |
+| 4 | 100/100 | 449.867 | 459.996 |
+
+The S3 summary and all six raw JSONL files were read back after completion.
+Each raw file contained 100 successful records, and the summary prompt-bank
+SHA-256 matched the homogeneous trial. Both ranks' JSONL and text logs were
+uploaded and listed with nonzero sizes. The client and GPU Jobs were deleted
+after verification; the West model PVC and S3 results were retained.
+
+The cross-region pipeline was much slower than the single-node two-A10
+reference, including at the lowest offered rate. At higher rates, substantial
+queueing makes p50 non-monotonic across this one sweep. This is one
+exploratory run with different GPU capacity and parallelism; it does not
+establish a cost-matched or statistically replicated comparison. The paper's
+independently placed replicas were not reproduced.
 
 S3 prefix:
 `s3://hexgen-nrp-results-b97886564c50/hexgen-nrp/13b-hetero-ada-smoke-001/decentralized-13b-a10-rtx5000/`.

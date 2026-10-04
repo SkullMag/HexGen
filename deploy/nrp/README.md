@@ -66,7 +66,9 @@ completed two-A10 homogeneous run. The heterogeneous pair has 56 GiB total
 VRAM versus 48 GiB for the homogeneous pair, and the cross-region pipeline
 adds network latency. Report these differences alongside any latency chart;
 this is an exploratory placement comparison, not a cost-matched reproduction
-of the paper's independently placed replicas.
+of the paper's independently placed replicas. The full six-rate heterogeneous
+sweep completed with 600/600 successful measured requests and verified raw
+S3 records; the validation record reports the latency and cleanup.
 
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
