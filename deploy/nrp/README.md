@@ -35,6 +35,22 @@ running the full rate sweep. Delete both Jobs promptly after the run; retain
 the PVC and S3 results. A Pending GPU Job must also be deleted rather than
 left waiting for capacity to appear unattended.
 
+`centralized-13b-a10-east.yaml` runs the same 13B checkpoint on two A10s on
+one East node. It mounts the already-complete West CephFS PVC read-only. A
+CPU-only mount test from an East A10 node verified the conversion marker and
+prompt bank were readable. An October 4 attempt to convert a second copy on
+East CephFS stalled on storage reads, so the incomplete East PVC was removed.
+
+The published image currently contains an older sequential client that calls
+the proxy inference route. `run.py` mounts the current `client.py` from a
+run-specific ConfigMap into client Jobs so the fixed direct route and frozen
+Poisson rate sweep run with the pinned worker image. Use `--client-node` when a
+verified client node has the image cached; the October 4 trial used
+`usra-sti-01.uah.edu` after an Internet2 node spent several minutes pulling
+the image. Record the actual GPU site
+and distinct S3 variant prefix. This is an alternative 13B homogeneous trial,
+not a 70B comparison arm.
+
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
 [scheduler check](validation/placement-2026-10-03/README.md) found no

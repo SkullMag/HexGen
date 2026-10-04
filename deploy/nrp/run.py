@@ -20,7 +20,7 @@ def kubectl(args: list[str], context: str, namespace: str, data: str | None = No
 def render(variant: str, run_id: str, image: str, arrival_seed: int = 20260919,
            requests: int | None = None, rates: str | None = None,
            warmups: int | None = None, new_tokens: int | None = None,
-           component: str = "all") -> list[dict]:
+           component: str = "all", client_node: str | None = None) -> list[dict]:
     documents = list(yaml.safe_load_all((HERE / "common.yaml").read_text()))
     documents += list(yaml.safe_load_all((HERE / f"{variant}.yaml").read_text()))
     if component == "servers":
@@ -47,13 +47,31 @@ def render(variant: str, run_id: str, image: str, arrival_seed: int = 20260919,
                              "WARMUPS": warmups, "NEW_TOKENS": new_tokens}
                 if env["name"] in overrides and overrides[env["name"]] is not None:
                     env["value"] = str(overrides[env["name"]])
+        if document["kind"] == "Job" and document["metadata"]["name"].endswith(
+            f"-client-{run_id}"
+        ):
+            pod = document["spec"]["template"]["spec"]
+            if client_node:
+                pod.setdefault("nodeSelector", {})["kubernetes.io/hostname"] = client_node
+            pod.setdefault("volumes", []).append({"name": "client-code", "configMap": {
+                "name": f"hexgen-nrp-client-code-{run_id}"}})
+            for container in pod["containers"]:
+                container.setdefault("volumeMounts", []).append({
+                    "name": "client-code", "mountPath": "/opt/hexgen/deploy/nrp/client.py",
+                    "subPath": "client.py", "readOnly": True})
+    if component != "servers":
+        documents.insert(0, {"apiVersion": "v1", "kind": "ConfigMap",
+                             "metadata": {"name": f"hexgen-nrp-client-code-{run_id}"},
+                             "data": {"client.py": (HERE / "client.py").read_text()}})
     return documents
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["render", "apply", "delete"])
-    parser.add_argument("--variant", choices=["centralized", "centralized-13b", "decentralized"], required=True)
+    parser.add_argument("--variant", choices=["centralized", "centralized-13b",
+                                              "centralized-13b-a10-east", "decentralized"],
+                        required=True)
     parser.add_argument("--component", choices=["all", "servers", "client"],
                         default="all", help="Submit servers first, then the client once pods are Ready")
     parser.add_argument("--run-id", required=True)
@@ -64,6 +82,7 @@ def main():
     parser.add_argument("--rates", help="Space-separated offered rates per second")
     parser.add_argument("--warmups", type=int, help="Warmup requests after readiness")
     parser.add_argument("--new-tokens", type=int, help="Generated tokens per request")
+    parser.add_argument("--client-node", help="Pin the load client to a verified live node")
     parser.add_argument("--context", default="nautilus")
     parser.add_argument("--namespace", default="nyu-networks")
     args = parser.parse_args()
@@ -86,7 +105,7 @@ def main():
             parser.error("rates must be a space-separated list of positive numbers")
     documents = render(args.variant, args.run_id, args.image, args.arrival_seed,
                        args.requests, args.rates, args.warmups, args.new_tokens,
-                       args.component)
+                       args.component, args.client_node)
     data = yaml.safe_dump_all(documents, sort_keys=False)
     if args.action == "render":
         print(data, end="")
@@ -95,6 +114,7 @@ def main():
         if args.component == "client":
             server_jobs = {"centralized": ["hexgen-nrp-central-head"],
                            "centralized-13b": ["hexgen-nrp-13b-head"],
+                           "centralized-13b-a10-east": ["hexgen-nrp-13b-a10-head"],
                            "decentralized": ["hexgen-nrp-hetero-head",
                                              "hexgen-nrp-hetero-east"]}
             for name in server_jobs[args.variant]:
