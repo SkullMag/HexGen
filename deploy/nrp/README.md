@@ -54,6 +54,20 @@ the image. Record the actual GPU site
 and distinct S3 variant prefix. This is an alternative 13B homogeneous trial,
 not a 70B comparison arm.
 
+`decentralized-13b-a10-rtx5000.yaml` is the two-site 13B heterogeneous
+trial ([validation record](validation/heterogeneous-13b-2026-10-04/README.md)).
+It places one A10 at MGH in US East and one RTX 5000 Ada at UCSC in US
+West, with 16 and 24 layers respectively. Each worker mounts the same pinned
+13B checkpoint and prompt bank from `hexgen-model-west-13b` without moving
+model bytes through the submitting computer. Both cards passed packed-QKV and
+packed-KV FlashAttention 2.0.8 kernel probes with this image. The client uses
+the same East node, seed, rates, prompt bank, output length, and image as the
+completed two-A10 homogeneous run. The heterogeneous pair has 56 GiB total
+VRAM versus 48 GiB for the homogeneous pair, and the cross-region pipeline
+adds network latency. Report these differences alongside any latency chart;
+this is an exploratory placement comparison, not a cost-matched reproduction
+of the paper's independently placed replicas.
+
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
 [scheduler check](validation/placement-2026-10-03/README.md) found no

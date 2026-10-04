@@ -70,7 +70,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["render", "apply", "delete"])
     parser.add_argument("--variant", choices=["centralized", "centralized-13b",
-                                              "centralized-13b-a10-east", "decentralized"],
+                                              "centralized-13b-a10-east",
+                                              "decentralized-13b-a10-rtx5000", "decentralized"],
                         required=True)
     parser.add_argument("--component", choices=["all", "servers", "client"],
                         default="all", help="Submit servers first, then the client once pods are Ready")
@@ -115,6 +116,8 @@ def main():
             server_jobs = {"centralized": ["hexgen-nrp-central-head"],
                            "centralized-13b": ["hexgen-nrp-13b-head"],
                            "centralized-13b-a10-east": ["hexgen-nrp-13b-a10-head"],
+                           "decentralized-13b-a10-rtx5000": ["hexgen-nrp-13b-hetero-head",
+                                                               "hexgen-nrp-13b-hetero-rtx5000"],
                            "decentralized": ["hexgen-nrp-hetero-head",
                                              "hexgen-nrp-hetero-east"]}
             for name in server_jobs[args.variant]:
