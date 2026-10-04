@@ -69,8 +69,8 @@ this is an exploratory placement comparison, not a cost-matched reproduction
 of the paper's independently placed replicas. The full six-rate heterogeneous
 sweep completed with 600/600 successful measured requests and verified raw
 S3 records; the validation record reports the latency and cleanup. The
-[13B comparison figure](analysis/README.md) overlays both arms' p50, p95,
-and 99% SLO deadline across the same six offered rates.
+[13B comparison figure](analysis/README.md) overlays both arms' SLO-attainment
+curves at the same six offered rates, using linear axes and absolute deadlines.
 
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest

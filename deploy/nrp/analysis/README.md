@@ -2,11 +2,19 @@
 
 [`13b_comparison.png`](13b_comparison.png) and
 [`13b_comparison.pdf`](13b_comparison.pdf) overlay the completed homogeneous
-and heterogeneous runs at the same six offered request rates. The left panel
-shows per-request end-to-end p50 and p95. The right panel shows the minimum
-deadline at which at least 99 of 100 requests meet the SLO, matching the
-deadline formulation used in [HexGen's evaluation](https://arxiv.org/html/2311.11514v3).
-Both axes use logarithmic scales.
+and heterogeneous runs in six panels, one for each offered request rate. As in
+[HexGen's Figure 2](https://arxiv.org/pdf/2311.11514v3), the vertical axis is
+SLO attainment: the percentage of requests completed within a deadline. The
+horizontal axis is the SLO deadline in **absolute seconds**. Both axes are
+linear. Each empirical curve rises by one percentage point for each of the
+100 successful measured requests at that rate; the dotted horizontal line
+marks 99% attainment.
+
+The paper expresses its deadline as a scale factor of a reference A100
+execution latency. We did not measure that reference on NRP, so these panels
+use seconds instead of claiming paper-equivalent SLO scale factors. This also
+avoids selecting one arbitrary deadline after seeing the data. The SLO metric
+and linear presentation follow Figure 2, but the horizontal units differ.
 
 The figure was calculated from the 1,200 successful raw request records in
 NRP S3, not from hand-copied summary values. `export_13b_latency.py` reads the
@@ -26,9 +34,10 @@ The source runs are:
 
 Both arms used the same Llama-2-13B FP16 checkpoint, image, prompt bank,
 client site, arrival seed, 32 generated tokens, and 100 measured requests per
-rate. At 0.125 requests/s, the homogeneous p50 was 1.449 seconds and the
-heterogeneous p50 was 5.410 seconds. The respective 99% deadlines were 5.119
-and 22.036 seconds. The heterogeneous arm stayed slower at all six rates.
+rate. At 0.125 requests/s, the minimum deadline for 99% attainment was 5.119
+seconds for the homogeneous arm and 22.036 seconds for the heterogeneous arm.
+The homogeneous curve reaches any given attainment level sooner at all six
+rates.
 
 This is one sweep per arm, with no run-to-run uncertainty estimate. The GPU
 types, VRAM totals, parallel layout, and network topology differ; the runs
