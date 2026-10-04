@@ -1,0 +1,2 @@
+{"rank": 1, "input_ids": [1, 364, 4739, 296, 6110, 325], "generated_ids": [260, 2277, 296, 7352, 29508, 29520, 596, 325], "inference_seconds": 2.7782042026519775, "peak_allocated_bytes": 6751602688, "request_id": "nrp-7b-two-site-fixed-1", "prompt_id": 1}
+{"rank": 1, "input_ids": [1, 318, 6086, 1264, 1777, 1136, 863], "generated_ids": [339, 1581, 290, 4309, 260, 1927, 1337, 296, 7224, 29520, 501, 420], "inference_seconds": 0.7621650695800781, "peak_allocated_bytes": 6753251840, "request_id": "nrp-7b-two-site-fixed-2", "prompt_id": 2}

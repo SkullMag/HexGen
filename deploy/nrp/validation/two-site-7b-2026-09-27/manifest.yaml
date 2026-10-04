@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hexgen-7b-two-site-script
+  namespace: nyu-networks
+data:
+  worker.sh: "#!/usr/bin/env bash\nset -Eeuo pipefail\n\n: \"${RANK:?rank is required}\"\
+    \nexport HF_HOME=/scratch/hf\nexport HF_HUB_OFFLINE=0\nexport TRANSFORMERS_OFFLINE=0\n\
+    export MASTER_ADDR=hexgen-7b-two-site-head\nexport MASTER_PORT=29511\nexport WORLD_SIZE=2\n\
+    export LOCAL_RANK=0\nexport CUDA_VISIBLE_DEVICES=0\nexport OCF_WORKER_ADDR=hexgen-7b-two-site-head\n\
+    export NCCL_IB_DISABLE=1\nexport NCCL_SOCKET_IFNAME=eth0\nexport GLOO_SOCKET_IFNAME=eth0\n\
+    \nocf_pid=\ncleanup() {\n  if [[ -n \"$ocf_pid\" ]]; then kill \"$ocf_pid\" 2>/dev/null\
+    \ || true; fi\n}\ntrap cleanup EXIT\nif [[ \"$RANK\" == 0 ]]; then\n  ocf-core\
+    \ --config /opt/hexgen/third_party/ocf/src/ocf-core/config/cfg_standalone.yaml\
+    \ start \\\n    > /scratch/ocf.log 2>&1 &\n  ocf_pid=$!\nfi\n\nfor i in $(seq\
+    \ 1 120); do\n  if curl -fsS --max-time 5 http://hexgen-7b-two-site-head:8092/api/v1/status/peers\
+    \ >/dev/null 2>&1; then\n    break\n  fi\n  sleep 2\ndone\ncurl -fsS --max-time\
+    \ 5 http://hexgen-7b-two-site-head:8092/api/v1/status/peers >/dev/null\n\nmkdir\
+    \ -p /scratch/converted/separate_state_dicts\npython - <<'PY'\nfrom huggingface_hub\
+    \ import snapshot_download\npath = snapshot_download(\n    repo_id=\"openlm-research/open_llama_7b_v2\"\
+    ,\n    revision=\"e5961def23172a2384543940e773ab676033c963\",\n    local_dir=\"\
+    /scratch/checkpoint\",\n    allow_patterns=[\"config.json\", \"generation_config.json\"\
+    , \"tokenizer.model\",\n                    \"tokenizer_config.json\", \"special_tokens_map.json\"\
+    ,\n                    \"pytorch_model-*.bin\", \"pytorch_model.bin.index.json\"\
+    ],\n)\nprint(\"CHECKPOINT_READY\", path, flush=True)\nPY\ncd /opt/hexgen/hexgen/llama/load_model_parameters_utils\n\
+    python create_separate_state_dicts_llama_7b.py \\\n  --checkpoint-path /scratch/checkpoint\
+    \ \\\n  --save-dir /scratch/converted/separate_state_dicts\ntest -s /scratch/converted/inv_freq.pt\n\
+    test -s /scratch/converted/separate_state_dicts/layer_31.pt\necho \"CONVERTED_READY\
+    \ rank=$RANK\"\n\nexport HF_HUB_OFFLINE=1\nexport TRANSFORMERS_OFFLINE=1\ncd /opt/hexgen/benchmark/hexgen_documents\n\
+    python _llama_worker.py \\\n  --local-rank 0 --model_size llama-7b --mixed_precision\
+    \ fp16 --fp16 --use-flash-attn \\\n  --num-layers 32 --hidden_size 4096 --num_attention_heads\
+    \ 32 \\\n  --max-position-embeddings 2048 --seq-length 128 --micro-batch-size\
+    \ 1 \\\n  --tensor-model-parallel-size 1 --pipeline-model-parallel-size 2 \\\n\
+    \  --hetero_config 1 1 --pp_partition 16 16 \\\n  --checkpoint-path /scratch/checkpoint\
+    \ --state-dicts-path /scratch/converted \\\n  --request-log \"/scratch/rank${RANK}.jsonl\"\
+    \ \\\n  --model_name NRP-OpenLLaMA-7B-TwoSite \\\n  --head_node http://hexgen-7b-two-site-head:8092\
+    \ --group_id 0\n"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hexgen-7b-two-site-head
+  namespace: nyu-networks
+spec:
+  selector:
+    app: hexgen-7b-two-site-head
+  ports:
+  - name: http
+    port: 8092
+    targetPort: 8092
+  - name: nats
+    port: 8094
+    targetPort: 8094
+  - name: torch
+    port: 29511
+    targetPort: 29511
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hexgen-7b-two-site-head
+  namespace: nyu-networks
+  labels: &id001
+    app: hexgen-7b-two-site-head
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      restartPolicy: Never
+      priorityClassName: opportunistic
+      nodeSelector:
+        kubernetes.io/hostname: hcc-prp-c5038.unl.edu
+        topology.kubernetes.io/region: us-central
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: PreferNoSchedule
+      volumes:
+      - name: scratch
+        emptyDir:
+          sizeLimit: 90Gi
+      - name: script
+        configMap:
+          name: hexgen-7b-two-site-script
+          defaultMode: 493
+      containers:
+      - name: worker
+        image: ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391
+        imagePullPolicy: Always
+        command:
+        - /bin/bash
+        - /scripts/worker.sh
+        env:
+        - name: RANK
+          value: '0'
+        volumeMounts:
+        - name: scratch
+          mountPath: /scratch
+        - name: script
+          mountPath: /scripts
+          readOnly: true
+        ports:
+        - containerPort: 8092
+        - containerPort: 8094
+        - containerPort: 29511
+        resources:
+          requests:
+            cpu: '2'
+            memory: 96Gi
+            ephemeral-storage: 80Gi
+            nvidia.com/rtxa6000: '1'
+          limits:
+            cpu: '2'
+            memory: 112Gi
+            ephemeral-storage: 90Gi
+            nvidia.com/rtxa6000: '1'
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hexgen-7b-two-site-east
+  namespace: nyu-networks
+  labels: &id001
+    app: hexgen-7b-two-site-east
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      restartPolicy: Never
+      priorityClassName: opportunistic
+      nodeSelector:
+        kubernetes.io/hostname: gpu-06.nrp.mghpcc.org
+        topology.kubernetes.io/region: us-east
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: PreferNoSchedule
+      volumes:
+      - name: scratch
+        emptyDir:
+          sizeLimit: 90Gi
+      - name: script
+        configMap:
+          name: hexgen-7b-two-site-script
+          defaultMode: 493
+      containers:
+      - name: worker
+        image: ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391
+        imagePullPolicy: Always
+        command:
+        - /bin/bash
+        - /scripts/worker.sh
+        env:
+        - name: RANK
+          value: '1'
+        volumeMounts:
+        - name: scratch
+          mountPath: /scratch
+        - name: script
+          mountPath: /scripts
+          readOnly: true
+        ports: []
+        resources:
+          requests:
+            cpu: '8'
+            memory: 64Gi
+            ephemeral-storage: 80Gi
+            nvidia.com/gpu: '1'
+          limits:
+            cpu: '9'
+            memory: 76Gi
+            ephemeral-storage: 90Gi
+            nvidia.com/gpu: '1'
