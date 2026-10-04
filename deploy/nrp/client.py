@@ -52,7 +52,7 @@ def percentile(values, fraction):
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
 
-async def request(session, item, index, request_id, scheduled_at, origin, new_tokens):
+async def request(session, item, index, request_id, scheduled_at, origin, new_tokens, head=None):
     submitted = time.perf_counter()
     payload = {
         "model_name": os.environ["MODEL_NAME"] + "_0",
@@ -65,9 +65,12 @@ async def request(session, item, index, request_id, scheduled_at, origin, new_to
               "request_index": index, "scheduled_offset_s": scheduled_at - origin,
               "submitted_offset_s": submitted - origin,
               "submission_lag_s": submitted - scheduled_at}
+    if head is None:
+        head = os.environ["HEAD_NODE"]
+    record["replica_index"] = index % len(os.environ.get("HEAD_NODES", head).split())
     try:
         # The auto-routing endpoint currently fails when forwarding to its own peer.
-        endpoint = os.environ["HEAD_NODE"].rstrip("/") + "/api/v1/request/_inference"
+        endpoint = head.rstrip("/") + "/api/v1/request/_inference"
         async with session.post(endpoint, json=payload) as response:
             result = await response.json()
             if response.status >= 400 or "error" in result:
@@ -94,6 +97,10 @@ async def run():
     warmups = int(os.environ.get("WARMUPS", "3"))
     new_tokens = int(os.environ.get("NEW_TOKENS", "32"))
     seed = int(os.environ.get("ARRIVAL_SEED", "20260919"))
+    heads = os.environ.get("HEAD_NODES", os.environ["HEAD_NODE"]).split()
+    if not heads or any(not head.startswith("http://") for head in heads):
+        raise ValueError("HEAD_NODES must list HTTP coordinator addresses")
+    effective_warmups = max(warmups, len(heads))
     if not rates or any(rate <= 0 for rate in rates) or count < 1 or warmups < 0 or new_tokens < 1:
         raise ValueError("Invalid load sweep configuration")
     unit_offsets = arrival_offsets(count, seed)
@@ -103,9 +110,10 @@ async def run():
               **bank_metadata,
               "prompt_bank_sha256": bank_sha256, "prompt_count": len(bank),
               "rates_per_second": rates, "requests_per_rate": count,
-              "warmups": warmups, "new_tokens": new_tokens, "arrival_seed": seed,
+              "warmups": effective_warmups, "new_tokens": new_tokens, "arrival_seed": seed,
               "unit_rate_offsets_s": unit_offsets,
               "request_endpoint": "/api/v1/request/_inference",
+              "replica_count": len(heads), "routing": "request-index-round-robin",
               "started_utc": datetime.now(timezone.utc).isoformat()}
     (RESULTS / "config.json").write_text(json.dumps(config, indent=2) + "\n")
     upload_metadata(RESULTS, "client", config)
@@ -114,23 +122,26 @@ async def run():
     summary = []
     async with aiohttp.ClientSession(timeout=timeout, connector=aiohttp.TCPConnector(limit=0)) as session:
         # A successful inference proves that the model has registered and loaded.
-        ready = False
-        for attempt in range(120):
-            now = time.perf_counter()
-            result = await request(session, bank[0], 0, f"{run_id}-readiness-{attempt}",
-                                   now, now, new_tokens)
-            if result["success"]:
-                ready = True
-                break
-            await asyncio.sleep(10)
-        if not ready:
-            (RESULTS / "readiness.json").write_text(json.dumps(result, indent=2) + "\n")
-            upload(RESULTS / "readiness.json", "client")
-            return 1
-        for index in range(warmups):
+        for replica_index, head in enumerate(heads):
+            ready = False
+            for attempt in range(120):
+                now = time.perf_counter()
+                result = await request(session, bank[0], replica_index,
+                                       f"{run_id}-readiness-{replica_index}-{attempt}",
+                                       now, now, new_tokens, head)
+                if result["success"]:
+                    ready = True
+                    break
+                await asyncio.sleep(10)
+            if not ready:
+                (RESULTS / "readiness.json").write_text(json.dumps(result, indent=2) + "\n")
+                upload(RESULTS / "readiness.json", "client")
+                return 1
+        for index in range(effective_warmups):
             now = time.perf_counter()
             result = await request(session, bank[index % len(bank)], index,
-                                   f"{run_id}-warmup-{index}", now, now, new_tokens)
+                                   f"{run_id}-warmup-{index}", now, now, new_tokens,
+                                   heads[index % len(heads)])
             if not result["success"]:
                 raise RuntimeError(f"Warmup failed: {result['error']}")
         for rate in rates:
@@ -145,7 +156,8 @@ async def run():
                 await asyncio.sleep(max(0.0, scheduled_at - time.perf_counter()))
                 result = await request(session, bank[index % len(bank)], index,
                                        f"{run_id}-rate-{label}-{index:04d}",
-                                       scheduled_at, origin, new_tokens)
+                                       scheduled_at, origin, new_tokens,
+                                       heads[index % len(heads)])
                 async with lock:
                     records.append(result)
                     with path.open("a") as stream:

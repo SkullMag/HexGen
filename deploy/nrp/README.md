@@ -72,6 +72,18 @@ S3 records; the validation record reports the latency and cleanup. The
 [13B comparison figure](analysis/README.md) overlays both arms' SLO-attainment
 curves at the same six offered rates, using linear axes and absolute deadlines.
 
+The [two-replica 13B fleet comparison](validation/fleet-13b-2026-10-04/README.md)
+corrects the placement mismatch: each complete replica stays on one node,
+with the heterogeneous fleet's two replicas in East and West. It uses two
+2×A10 replicas at MGH versus one 2×A10 at MGH plus one 2×RTX 3090 in West.
+Both have two replicas, 96 GiB nominal VRAM, and a $4.024/hour AWS proxy
+GPU budget. `fleet_13b.py` renders isolated Services/Jobs and round-robin
+client routing for either arm; `fleet-13b-probes.yaml` provides a short
+simultaneous scheduler gate. October 4 probes could not place the needed
+cards, so **no new fleet run has started**. Rerun the homogeneous arm when
+the paired fleet becomes schedulable; the earlier one-replica result is not
+its comparable baseline.
+
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
 [scheduler check](validation/placement-2026-10-03/README.md) found no
