@@ -1,5 +1,40 @@
 # NRP HexGen starter experiment
 
+## Smaller homogeneous 13B trial
+
+`centralized-13b.yaml` runs one Llama-2-13B FP16 replica with tensor
+parallelism across two RTX 3090 GPUs in a single West-region pod. The two
+24 GiB cards provide 48 GiB total VRAM for roughly 26 GiB of FP16 weights.
+This is a capacity-dependent trial, not a matched 70B comparison arm.
+
+The checkpoint revision is pinned in `model-stage-13b.yaml`. Model bytes are
+downloaded directly onto the NRP `hexgen-model-west-13b` PVC; the submitting
+computer only sends three small preparation scripts in a ConfigMap. The scripts
+are mounted separately because the currently deployed image predates the prompt
+bank preparation script.
+
+```sh
+kubectl --context=nautilus -n nyu-networks apply -f deploy/nrp/model-pvc-13b.yaml
+kubectl --context=nautilus -n nyu-networks create configmap hexgen-nrp-13b-scripts \
+  --from-file=prepare_prompt_bank.py=deploy/nrp/prepare_prompt_bank.py \
+  --from-file=stream_convert_llama.py=deploy/nrp/stream_convert_llama.py \
+  --from-file=selection.py=benchmark/native_7b/selection.py \
+  --dry-run=client -o yaml | kubectl --context=nautilus -n nyu-networks apply -f -
+kubectl --context=nautilus -n nyu-networks apply -f deploy/nrp/model-stage-13b.yaml
+kubectl --context=nautilus -n nyu-networks wait --for=condition=complete \
+  job/hexgen-nrp-stage-llama13b --timeout=6h
+```
+
+After confirming the staging Job completed and two RTX 3090 GPUs are
+schedulable on the same node, render the smoke manifest with `run.py` using
+`--variant centralized-13b --requests 2 --rates '0.125' --warmups 1
+--new-tokens 8`. Submit `--component servers` first, wait for the server pod
+to be Ready, then submit `--component client`. Verify FlashAttention execution,
+two successful requests, both rank logs, and uploaded S3 records before
+running the full rate sweep. Delete both Jobs promptly after the run; retain
+the PVC and S3 results. A Pending GPU Job must also be deleted rather than
+left waiting for capacity to appear unattended.
+
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
 [scheduler check](validation/placement-2026-10-03/README.md) found no

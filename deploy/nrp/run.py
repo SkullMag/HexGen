@@ -53,7 +53,7 @@ def render(variant: str, run_id: str, image: str, arrival_seed: int = 20260919,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["render", "apply", "delete"])
-    parser.add_argument("--variant", choices=["centralized", "decentralized"], required=True)
+    parser.add_argument("--variant", choices=["centralized", "centralized-13b", "decentralized"], required=True)
     parser.add_argument("--component", choices=["all", "servers", "client"],
                         default="all", help="Submit servers first, then the client once pods are Ready")
     parser.add_argument("--run-id", required=True)
@@ -94,6 +94,7 @@ def main():
     if args.action == "apply":
         if args.component == "client":
             server_jobs = {"centralized": ["hexgen-nrp-central-head"],
+                           "centralized-13b": ["hexgen-nrp-13b-head"],
                            "decentralized": ["hexgen-nrp-hetero-head",
                                              "hexgen-nrp-hetero-east"]}
             for name in server_jobs[args.variant]:

@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--dataset-sha256", required=True)
     parser.add_argument("--tokenizer-path", type=Path, required=True)
     parser.add_argument("--model-revision", required=True)
+    parser.add_argument("--model-repo", default="meta-llama/Llama-2-70b-hf")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--count", type=int, default=500)
     parser.add_argument("--candidate-count", type=int, default=1000)
@@ -36,7 +37,7 @@ def main():
         "requests_per_experiment": args.candidate_count,
         "input_tokens": 128,
         "prompt_seed": 20260919,
-        "model": "meta-llama/Llama-2-70b-hf",
+        "model": args.model_repo,
         "model_revision": args.model_revision,
         "workload": {
             "dataset_id": "lmsys/chatbot_arena_conversations",
