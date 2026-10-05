@@ -80,9 +80,11 @@ Both have two replicas, 96 GiB nominal VRAM, and a $4.024/hour AWS proxy
 GPU budget. `fleet_13b.py` renders isolated Services/Jobs and round-robin
 client routing for either arm; `fleet-13b-probes.yaml` provides a short
 simultaneous scheduler gate. October 4 probes could not place the needed
-cards, so **no new fleet run has started**. Rerun the homogeneous arm when
-the paired fleet becomes schedulable; the earlier one-replica result is not
-its comparable baseline.
+cards. An October 5 homogeneous fleet smoke passed, but the West GPU pair was
+lost before the heterogeneous smoke; see the linked fleet validation record.
+**No full paired fleet sweep has run.** Rerun the homogeneous arm when the
+paired fleet becomes schedulable; the earlier one-replica result is not its
+comparable baseline.
 
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
