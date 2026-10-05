@@ -64,3 +64,26 @@ passes, read actual assigned hosts, delete the probes, inspect node health and
 storage locality, then render the fleet with those exact hostnames. Do not
 leave Pending GPU Jobs unattended. Scheduler admission is not a successful
 model load or completed experiment.
+
+## October 5 placement and homogeneous smoke
+
+A simultaneous gate briefly admitted two 2×A10 pods at MGH East on
+`gpu-11.nrp.mghpcc.org` and `gpu-12.nrp.mghpcc.org`, plus a 2×RTX 3090 pod at
+SDSC West on `ry-gpu-03.sdsc.optiputer.net`. All three probe Jobs were deleted.
+The homogeneous smoke `13b-fleet-smoke-1005` then started two independent local
+2×A10 replicas on the East nodes with the pinned image and staged 13B FP16
+checkpoint. Both loaded the model, both rank-0 logs reported
+`use_flash_attn: true`, and both replicas handled requests. With two warmups,
+two measured requests at 0.125 requests/s, and eight generated tokens, the
+client reported 2/2 successful measured requests. Its S3 upload log named
+`hexgen-nrp/13b-fleet-smoke-1005/centralized-13b-fleet-a10/` and included
+`config.json`, `rate-0p125.jsonl`, and `summary.json`. Those objects were not
+independently read back in this smoke. The GPU and client Jobs were deleted.
+
+Immediately afterward, the heterogeneous smoke's East A10 Job scheduled but
+the West RTX 3090 Job stayed Pending: the selected node reported insufficient
+GPU. Both Jobs were deleted without submitting a client. A new simultaneous
+gate placed two East A10 pairs on `gpu-16.nrp.mghpcc.org` and
+`gpu-11.nrp.mghpcc.org`; the unpinned West RTX 3090 pair stayed Pending. All
+gate Jobs and Pods were deleted. This is an incomplete smoke, not a completed
+paired fleet comparison; no full six-rate fleet sweep ran.
