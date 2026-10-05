@@ -1,4 +1,4 @@
-# Two-replica 13B comparison: prepared, awaiting placement
+# Two-replica 13B comparison: smokes validated, awaiting full placement
 
 The previous 13B comparison put one pipeline stage in US East and the next
 stage in US West. This design instead keeps every complete FP16 replica on one
@@ -87,3 +87,53 @@ gate placed two East A10 pairs on `gpu-16.nrp.mghpcc.org` and
 `gpu-11.nrp.mghpcc.org`; the unpinned West RTX 3090 pair stayed Pending. All
 gate Jobs and Pods were deleted. This is an incomplete smoke, not a completed
 paired fleet comparison; no full six-rate fleet sweep ran.
+
+## October 5 alternate placement and NCCL fallback
+
+The original simultaneous gate (two East 2×A10 pairs and one West
+2×RTX 3090 pair) again had only one East pair. An alternate gate admitted one
+East 2×A10 pair and **two separate West 2×RTX 3090 pairs**. This permits a
+different matched comparison: two West RTX 3090 replicas as the homogeneous
+arm versus one East A10 and one West RTX 3090 replica as the heterogeneous
+arm. Both have two independent local 13B replicas, four 24 GiB GPUs, 96 GiB
+aggregate VRAM, and the same one-GPU AWS budget proxy. The hardware mix and
+client-to-site latency differ between arms; the proxy does not establish
+equal compute. The alternate gate uses
+[`fleet-13b-reverse-probes.yaml`](../../fleet-13b-reverse-probes.yaml).
+
+The first West-only smoke on Fullerton and SDSC nodes loaded the model with
+FlashAttention enabled but failed its first normal-mode inference: NCCL
+reported `peer access is not supported between these two devices` at a
+barrier on both nodes. Its client was stopped after uploading only
+`config.json`; it has no successful measured requests. A direct fallback
+diagnostic in an already-running pod encountered a full default 64 MiB
+`/dev/shm` and exited with `SIGBUS`.
+
+The fleet renderer now mounts a 2 GiB memory-backed `/dev/shm` and sets
+`NCCL_P2P_DISABLE=1` for both replicas of **all** arms so the paired comparison
+uses the same NCCL transport setting. With that setting, the West-only smoke
+`13b-west-p2p-off-1005` completed 2/2 measured requests at 0.125 requests/s,
+one per RTX 3090 replica. The mixed smoke `13b-hete-p2p-off-1005` likewise
+completed 2/2, one per A10 and RTX 3090 replica. Both ran FP16 normal-mode
+inference with `use_flash_attn: true`; the mixed arm's East A10 spent about
+seven minutes initializing, including a period blocked on model-storage I/O.
+Each smoke used two warmups and eight generated tokens. Their client
+`config.json`, `rate-0p125.jsonl`, and `summary.json` were read back from S3;
+each rate file contained two successful records with replica indices 0 and 1.
+Both replicas' rank JSONL and text logs plus metadata were uploaded and their
+S3 object lengths matched local file sizes. Results are under
+`hexgen-nrp/<run-id>/<variant>/`, with variant
+`centralized-13b-fleet-3090` or `decentralized-13b-fleet-a10-3090`.
+All smoke GPU/client Jobs and ConfigMaps were deleted.
+
+Immediately after these smokes, a full six-rate West baseline was attempted
+under run ID `13b-fleet-paired-1005`. One selected West node lost free CPU
+between gate and Job submission; one GPU Job stayed Pending. Both GPU Jobs
+were deleted without submitting the client. A fresh simultaneous alternate
+gate then left one East A10 probe and one West RTX 3090 probe Pending; all
+three probes were deleted. **No full corrected fleet sweep has run.** Recheck
+the three-pair gate before retrying, select the actual live hosts, and run
+the six-rate homogeneous and heterogeneous arms with the same run ID, trace,
+image, model, prompt bank, client node, output length, and NCCL setting.
+Freeze SLO deadlines from the new homogeneous full arm before looking at the
+heterogeneous full result.

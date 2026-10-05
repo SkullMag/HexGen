@@ -33,6 +33,9 @@ class FleetManifestTest(unittest.TestCase):
             env = {entry["name"]: entry.get("value") for entry in worker["env"]}
             self.assertEqual((env["WORLD_SIZE"], env["HETERO_CONFIG"], env["PP_PARTITION"]),
                              ("2", "2", "40"))
+            self.assertEqual(env["NCCL_P2P_DISABLE"], "1")
+            self.assertIn({"name": "nccl-shm", "mountPath": "/dev/shm"},
+                          worker["volumeMounts"])
             self.assertEqual(env["HEAD_NODE"], f"http://{services[index]['metadata']['name']}:8092")
         client = next(doc for doc in jobs if "-client-" in doc["metadata"]["name"])
         env = {entry["name"]: entry.get("value")
@@ -47,6 +50,23 @@ class FleetManifestTest(unittest.TestCase):
     def test_heterogeneous_replicas_do_not_span_regions(self):
         self.check_arm("heterogeneous", [EAST, WEST],
                        "NVIDIA-GeForce-RTX-3090", "us-west")
+
+    def test_west_homogeneous_replicas_share_nccl_fallback(self):
+        docs = render("homogeneous-west", "fleet13btest", IMAGE,
+                      [WEST, "nautilus-ext-gpu01.fullerton.edu"], CLIENT)
+        workers = [doc for doc in docs if doc["kind"] == "Job"
+                   and "-client-" not in doc["metadata"]["name"]]
+        self.assertEqual(len(workers), 2)
+        for job in workers:
+            spec = job["spec"]["template"]["spec"]
+            self.assertEqual(spec["nodeSelector"]["topology.kubernetes.io/region"], "us-west")
+            self.assertEqual(spec["nodeSelector"]["nvidia.com/gpu.product"],
+                             "NVIDIA-GeForce-RTX-3090")
+            worker = next(c for c in spec["containers"] if c["name"] == "worker")
+            env = {entry["name"]: entry.get("value") for entry in worker["env"]}
+            self.assertEqual(env["NCCL_P2P_DISABLE"], "1")
+            self.assertIn({"name": "nccl-shm", "mountPath": "/dev/shm"},
+                          worker["volumeMounts"])
 
 
 if __name__ == "__main__":

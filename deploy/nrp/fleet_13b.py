@@ -14,8 +14,10 @@ from run import render as render_single
 
 VARIANTS = {
     "homogeneous": "centralized-13b-fleet-a10",
+    "homogeneous-west": "centralized-13b-fleet-3090",
     "heterogeneous": "decentralized-13b-fleet-a10-3090",
 }
+ARM_JOB_PREFIX = {"homogeneous": "homo", "homogeneous-west": "west", "heterogeneous": "hete"}
 
 
 def set_env(container, name, value):
@@ -29,14 +31,12 @@ def set_env(container, name, value):
 def render(arm, run_id, image, hosts, client_node, arrival_seed=20260919,
            requests=100, rates="0.125 0.25 0.5 1 2 4", warmups=3, new_tokens=32,
            component="all"):
-    if len(hosts) != 2 or not hosts[0].endswith(".nrp.mghpcc.org"):
+    if len(hosts) != 2:
+        raise ValueError("Exactly two replica hosts are required")
+    if arm != "homogeneous-west" and not hosts[0].endswith(".nrp.mghpcc.org"):
         raise ValueError("Replica 0 must be an explicitly selected MGH A10 host")
     if arm == "homogeneous" and not hosts[1].endswith(".nrp.mghpcc.org"):
         raise ValueError("Both homogeneous replicas must stay at MGH")
-    if arm == "heterogeneous" and not (
-        hosts[1].endswith(".sdsc.optiputer.net") or hosts[1].startswith("suncave-")
-    ):
-        raise ValueError("Heterogeneous replica 1 must be on a verified West RTX 3090 host")
     variant = VARIANTS[arm]
     source = render_single("centralized-13b-a10-east", run_id, image,
                            arrival_seed, requests, rates, warmups, new_tokens,
@@ -53,7 +53,7 @@ def render(arm, run_id, image, hosts, client_node, arrival_seed=20260919,
     documents = [common]
     heads = []
     for index, host in enumerate(hosts):
-        name = f"hexgen-13b-{arm[:4]}-r{index}-{run_id}"
+        name = f"hexgen-13b-{ARM_JOB_PREFIX[arm]}-r{index}-{run_id}"
         if len(name) > 63:
             raise ValueError("run-id is too long for Kubernetes resource names")
         heads.append(f"http://{name}:8092")
@@ -66,11 +66,13 @@ def render(arm, run_id, image, hosts, client_node, arrival_seed=20260919,
         pod["metadata"]["labels"]["app"] = name
         spec = pod["spec"]
         spec["nodeSelector"]["kubernetes.io/hostname"] = host
-        if arm == "heterogeneous" and index == 1:
+        if arm == "homogeneous-west" or (arm == "heterogeneous" and index == 1):
             spec["nodeSelector"].update({
                 "topology.kubernetes.io/region": "us-west",
                 "nvidia.com/gpu.product": "NVIDIA-GeForce-RTX-3090",
             })
+        spec["volumes"].append({"name": "nccl-shm", "emptyDir": {
+            "medium": "Memory", "sizeLimit": "2Gi"}})
         for container in spec["containers"]:
             for key, value in {"VARIANT": variant,
                                "HEAD_NODE": heads[-1],
@@ -78,8 +80,11 @@ def render(arm, run_id, image, hosts, client_node, arrival_seed=20260919,
                                "MASTER_ADDR": name}.items():
                 if container["name"] == "worker":
                     set_env(container, key, value)
+            if container["name"] == "worker":
+                set_env(container, "NCCL_P2P_DISABLE", "1")
+                container["volumeMounts"].append({"name": "nccl-shm", "mountPath": "/dev/shm"})
         documents.extend([svc, job])
-    client["metadata"]["name"] = f"hexgen-13b-{arm[:4]}-client-{run_id}"
+    client["metadata"]["name"] = f"hexgen-13b-{ARM_JOB_PREFIX[arm]}-client-{run_id}"
     for container in client["spec"]["template"]["spec"]["containers"]:
         set_env(container, "VARIANT", variant)
         set_env(container, "HEAD_NODE", heads[0])
@@ -126,8 +131,9 @@ def preflight_servers(arm, hosts):
         spec, labels = node["spec"], node["metadata"]["labels"]
         ready = any(cond["type"] == "Ready" and cond["status"] == "True"
                     for cond in node["status"]["conditions"])
-        wanted_region = "us-west" if arm == "heterogeneous" and index == 1 else "us-east"
-        wanted_gpu = ("NVIDIA-GeForce-RTX-3090" if arm == "heterogeneous" and index == 1
+        west = arm == "homogeneous-west" or (arm == "heterogeneous" and index == 1)
+        wanted_region = "us-west" if west else "us-east"
+        wanted_gpu = ("NVIDIA-GeForce-RTX-3090" if west
                       else "NVIDIA-A10")
         if not ready or spec.get("unschedulable") or (
             labels.get("topology.kubernetes.io/region") != wanted_region
@@ -174,7 +180,7 @@ def main():
             preflight_servers(args.arm, args.hosts)
         if args.component == "client":
             for index in range(2):
-                name = f"hexgen-13b-{args.arm[:4]}-r{index}-{args.run_id}"
+                name = f"hexgen-13b-{ARM_JOB_PREFIX[args.arm]}-r{index}-{args.run_id}"
                 kubectl(["wait", "--for=condition=Ready", "pod", "-l",
                          f"job-name={name}", "--timeout=1s"])
         for document in documents:
