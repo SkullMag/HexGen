@@ -85,6 +85,9 @@ lost before the heterogeneous smoke; see the linked fleet validation record.
 **No full paired fleet sweep has run.** Rerun the homogeneous arm when the
 paired fleet becomes schedulable; the earlier one-replica result is not its
 comparable baseline.
+The current 13B fleet Jobs and placement probes leave the priority class
+unset (NRP priority 0). An [October 6 scheduler check](validation/fleet-13b-2026-10-06/README.md)
+found neither complete fleet gate schedulable even at that priority.
 
 **Current placement status (2026-10-03):** The host pinned in the 70B
 manifests is absent from the live node list. The latest
@@ -126,7 +129,7 @@ arm is $7.444/hour and the A6000+A10 arm is $7.595/hour (+2.0%); those rates
 are for one-GPU AWS instances, not actual NRP charges. The table also gives
 alternative 70B comparison pairs. NRP capacity is shared, so advertised GPU
 count is not free capacity.
-The Jobs use `opportunistic` priority and can be preempted. [NRP's GPU guidance](https://nrp.ai/documentation/userdocs/running/gpu-pods/)
+The older 70B Jobs use `opportunistic` priority and can be preempted. [NRP's GPU guidance](https://nrp.ai/documentation/userdocs/running/gpu-pods/)
 permits up to eight GPUs per node for Jobs; the four-GPU worker therefore runs
 as a Job rather than a Deployment.
 

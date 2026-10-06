@@ -10,7 +10,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      priorityClassName: opportunistic
       nodeSelector:
         topology.kubernetes.io/region: us-east
         nvidia.com/gpu.product: NVIDIA-A10
@@ -36,7 +35,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      priorityClassName: opportunistic
       nodeSelector:
         topology.kubernetes.io/region: us-east
         nvidia.com/gpu.product: NVIDIA-A10
@@ -62,7 +60,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      priorityClassName: opportunistic
       nodeSelector:
         topology.kubernetes.io/region: us-west
         nvidia.com/gpu.product: NVIDIA-GeForce-RTX-3090
