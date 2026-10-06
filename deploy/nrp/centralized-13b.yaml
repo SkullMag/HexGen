@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hexgen-nrp-13b-head
+spec:
+  selector:
+    app: hexgen-nrp-13b-head
+  ports:
+  - name: http
+    port: 8092
+    targetPort: 8092
+  - name: nats
+    port: 8094
+    targetPort: 8094
+  - name: torch
+    port: 29511
+    targetPort: 29511
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hexgen-nrp-13b-head
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 14400
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: hexgen-nrp-13b-head
+    spec:
+      terminationGracePeriodSeconds: 90
+      nodeSelector:
+        topology.kubernetes.io/region: us-west
+        nvidia.com/gpu.product: NVIDIA-GeForce-RTX-3090
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: PreferNoSchedule
+      volumes:
+      - name: model
+        persistentVolumeClaim:
+          claimName: hexgen-model-west-13b
+      - name: results
+        emptyDir: {}
+      - name: ocf-config
+        configMap:
+          name: hexgen-nrp-ocf
+      containers:
+      - name: coordinator
+        image: ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391
+        imagePullPolicy: IfNotPresent
+        args:
+        - ocf
+        ports:
+        - containerPort: 8092
+        - containerPort: 8094
+        volumeMounts:
+        - name: ocf-config
+          mountPath: /etc/hexgen
+          readOnly: true
+        resources:
+          requests:
+            cpu: '1'
+            memory: 2Gi
+          limits:
+            cpu: '1'
+            memory: 2Gi
+      - name: worker
+        image: ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391
+        imagePullPolicy: IfNotPresent
+        args:
+        - worker
+        envFrom:
+        - secretRef:
+            name: hexgen-nrp-s3
+        env:
+        - name: VARIANT
+          value: centralized-13b
+        - name: RUN_ID
+          value: example
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: LOCAL_GPU_COUNT
+          value: '2'
+        - name: RANK_OFFSET
+          value: '0'
+        - name: WORLD_SIZE
+          value: '2'
+        - name: HETERO_CONFIG
+          value: '2'
+        - name: PP_PARTITION
+          value: '40'
+        - name: MODEL_SIZE
+          value: llama-13b
+        - name: MODEL_LAYERS
+          value: '40'
+        - name: MODEL_NAME
+          value: HexGen-Llama2-13B-NRP
+        - name: CHECKPOINT_PATH
+          value: /model/checkpoint
+        - name: STATE_DICTS_PATH
+          value: /model/converted
+        - name: HEAD_NODE
+          value: http://hexgen-nrp-13b-head:8092
+        - name: OCF_WORKER_ADDR
+          value: hexgen-nrp-13b-head
+        - name: MASTER_ADDR
+          value: hexgen-nrp-13b-head
+        - name: MASTER_PORT
+          value: '29511'
+        - name: NCCL_SOCKET_IFNAME
+          value: eth0
+        - name: GLOO_SOCKET_IFNAME
+          value: eth0
+        volumeMounts:
+        - name: model
+          mountPath: /model
+          readOnly: true
+        - name: results
+          mountPath: /results
+        resources:
+          requests:
+            cpu: '2'
+            memory: 40Gi
+            nvidia.com/gpu: '2'
+          limits:
+            cpu: 2400m
+            memory: 48Gi
+            nvidia.com/gpu: '2'
+      restartPolicy: Never
+      priorityClassName: opportunistic
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hexgen-nrp-13b-client
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: client
+        image: ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391
+        imagePullPolicy: IfNotPresent
+        args:
+        - client
+        envFrom:
+        - secretRef:
+            name: hexgen-nrp-s3
+        env:
+        - name: VARIANT
+          value: centralized-13b
+        - name: RUN_ID
+          value: example
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MODEL_NAME
+          value: HexGen-Llama2-13B-NRP
+        - name: HEAD_NODE
+          value: http://hexgen-nrp-13b-head:8092
+        - name: WARMUPS
+          value: '3'
+        - name: REQUESTS
+          value: '100'
+        - name: PROMPTS_FILE
+          value: /model/workload/prompt_bank.json
+        - name: RATES
+          value: 0.125 0.25 0.5 1 2 4
+        - name: NEW_TOKENS
+          value: '32'
+        - name: ARRIVAL_SEED
+          value: '20260919'
+        - name: REQUEST_TIMEOUT_S
+          value: '1800'
+        resources:
+          requests:
+            cpu: '1'
+            memory: 2Gi
+          limits:
+            cpu: '1'
+            memory: 2Gi
+        volumeMounts:
+        - name: model
+          mountPath: /model
+          readOnly: true
+      priorityClassName: opportunistic
+      nodeSelector:
+        topology.kubernetes.io/region: us-west
+      volumes:
+      - name: model
+        persistentVolumeClaim:
+          claimName: hexgen-model-west-13b
+  activeDeadlineSeconds: 7200
+  ttlSecondsAfterFinished: 86400

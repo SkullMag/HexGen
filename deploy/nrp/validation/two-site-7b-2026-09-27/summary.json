@@ -1,0 +1,84 @@
+{
+  "date_utc": "2026-09-27",
+  "image": "ghcr.io/skullmag/hexgen@sha256:c2a8a83d7ca6c5bce16514942a206e4e871dfafc0aa373f9942bd56b22b21391",
+  "model": "openlm-research/open_llama_7b_v2",
+  "model_revision": "e5961def23172a2384543940e773ab676033c963",
+  "precision": "fp16",
+  "flash_attention": "2.0.8",
+  "layout": [
+    {
+      "rank": 0,
+      "node": "hcc-prp-c5038.unl.edu",
+      "region": "us-central",
+      "gpu": "NVIDIA RTX A6000",
+      "layers": [
+        0,
+        15
+      ]
+    },
+    {
+      "rank": 1,
+      "node": "gpu-06.nrp.mghpcc.org",
+      "region": "us-east",
+      "gpu": "NVIDIA A10",
+      "layers": [
+        16,
+        31
+      ]
+    }
+  ],
+  "tensor_parallel_degree_per_stage": [
+    1,
+    1
+  ],
+  "pipeline_stages": 2,
+  "request_endpoint": "OCF /api/v1/request/_inference",
+  "requests": [
+    {
+      "request_id": "nrp-7b-two-site-fixed-1",
+      "prompt": "The capital of France is",
+      "output": "<s>The capital of France is a city of contrasts. It is",
+      "generated_token_ids": [
+        260,
+        2277,
+        296,
+        7352,
+        29508,
+        29520,
+        596,
+        325
+      ],
+      "rank0_inference_seconds": 2.7809414863586426,
+      "rank1_inference_seconds": 2.7782042026519775,
+      "rank0_peak_allocated_bytes": 6751417856,
+      "rank1_peak_allocated_bytes": 6751602688
+    },
+    {
+      "request_id": "nrp-7b-two-site-fixed-2",
+      "prompt": "A distributed inference system should",
+      "output": "<s>A distributed inference system should be able to handle a large number of tasks. In this",
+      "generated_token_ids": [
+        339,
+        1581,
+        290,
+        4309,
+        260,
+        1927,
+        1337,
+        296,
+        7224,
+        29520,
+        501,
+        420
+      ],
+      "rank0_inference_seconds": 0.7709205150604248,
+      "rank1_inference_seconds": 0.7621650695800781,
+      "rank0_peak_allocated_bytes": 6752890368,
+      "rank1_peak_allocated_bytes": 6753251840
+    }
+  ],
+  "raw_rank_metrics": [
+    "rank0.jsonl",
+    "rank1.jsonl"
+  ]
+}

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hexgen-nrp-ocf
+data:
+  ocf.yaml: |
+    name: relay
+    path: ""
+    port: "8092"
+    queue:
+      port: "8094"
+    vacuum:
+      interval: 10
+    p2p:
+      http_streams_per_peer: 1024
+      http_memory_mib_per_peer: 512
+    bootstrap:
+      addrs: []
+      mode: standalone
