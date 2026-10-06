@@ -40,3 +40,28 @@ was produced. A final namespace check found no Jobs or Pods. These results
 show that neither selected comparable fleet layout was schedulable during
 this short priority-0 check. They do not establish that NRP has too few
 installed GPUs or that capacity will remain unavailable.
+
+## Additional region check
+
+At about 16:49 UTC, the live node inventory also listed A10 nodes in
+`us-central` and RTX 3090 nodes in `us-central`, `us-east`, `us-mountain`, and
+`us-west`. Installed/allocatable devices are not currently unallocated
+devices. The original East/West selection came from earlier validated A10
+and RTX 3090 smokes and East access to the staged West CephFS model claim;
+the model claim has not yet been mount-tested on a Central GPU host.
+
+To test whether another region offered a fleet placement, short temporary
+manifests derived from the two versioned fleet probe files replaced both
+region selectors with `us-central`, leaving GPU product, 2-GPU/3-CPU/42-GiB
+requests, priority 0, and the 120-second deadline unchanged. One simultaneous
+gate asked for two Central A10 pairs and one Central RTX 3090 pair; the other
+asked for one Central A10 pair and two Central RTX 3090 pairs. Every Pod stayed
+Pending without an assigned hostname. The scheduler reported insufficient
+GPU on eligible nodes, with CPU and/or memory failures on some nodes; its
+preemption assessment did not find a feasible placement. All six temporary
+Jobs and Pods were deleted, and a final namespace check found no Jobs or Pods.
+
+This rules out those two **tested Central-region gates at that time**, not
+every possible GPU type, site, or future placement. A Central admission would
+still require a model-volume mount test and normal-mode inference before a
+full sweep.
