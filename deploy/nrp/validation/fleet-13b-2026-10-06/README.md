@@ -65,3 +65,16 @@ This rules out those two **tested Central-region gates at that time**, not
 every possible GPU type, site, or future placement. A Central admission would
 still require a model-volume mount test and normal-mode inference before a
 full sweep.
+
+## Longer scheduler observation
+
+At about 16:54-16:56 UTC, the original East-A10/West-RTX-3090 simultaneous
+gate was submitted again at default priority. Unlike the quick snapshots
+above, the three Jobs were left for their full 120-second active deadline.
+Each Pod initially and after roughly 30 and 60 seconds remained Pending,
+reported `Unschedulable`, and had no assigned node. All three Jobs reached
+their deadline as Failed with zero completions; none ran the probe command.
+They were then deleted. A final check found no Jobs or Pods in the namespace.
+Thus waiting for this bounded interval did not produce the required placement.
+`Pending` itself is retried by Kubernetes and could resolve later if capacity
+changes; this check gives no guarantee about a future hour.
