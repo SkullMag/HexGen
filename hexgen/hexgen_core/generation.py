@@ -124,6 +124,9 @@ def decode(input_ids, input_ids_shape, model, forward_step_func, max_length, pp_
             next_token = sample(logits, top_k=top_k, top_p=top_p, temperature=temperature)
         else:
             next_token = teacher_outputs[:, seqlen_og]
+        # Only the final pipeline stage has the language-model logits. Share its
+        # sampled token before recording it, including the final generated token.
+        dist.broadcast(next_token, src=pp_last_stage_rank)
         sequences = [next_token]
         inference_params.sequence_len_offset = seqlen_og
         while True:
@@ -134,7 +137,6 @@ def decode(input_ids, input_ids_shape, model, forward_step_func, max_length, pp_
             if not cg:
                 # logits = model(rearrange(next_token, 'b -> b 1'), position_ids=position_ids,
                 #                inference_params=inference_params, last_token_only=True).logits
-                dist.broadcast(rearrange(next_token, 'b -> b 1'), src=pp_last_stage_rank)
                 inputs = [[rearrange(next_token, 'b -> b 1')], [rearrange(next_token, 'b -> b 1')]]
                 input_ids_shape = [[-1, 1, input_ids_shape[0][2]], [-1, 1], [-1, 1, input_ids_shape[0][2]]]
                 logits = model.gpipe_forward(forward_step_func, inputs, input_ids_shape, position_ids=position_ids, inference_params=inference_params)[0]
@@ -149,6 +151,7 @@ def decode(input_ids, input_ids_shape, model, forward_step_func, max_length, pp_
                 next_token = sample(logits, top_k=top_k, temperature=temperature)
             else:
                 next_token = teacher_outputs[:, inference_params.sequence_len_offset + 1]
+            dist.broadcast(next_token, src=pp_last_stage_rank)
             sequences.append(next_token)
             inference_params.sequence_len_offset += 1
             if eos_token_id is not None and (next_token == eos_token_id).all():

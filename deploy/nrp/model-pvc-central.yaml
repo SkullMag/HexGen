@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hexgen-model-unl
+  namespace: nyu-networks
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: linstor-unl
+  resources:
+    requests:
+      storage: 350Gi

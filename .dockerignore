@@ -1,0 +1,10 @@
+.git
+.github
+output
+work
+*.pt
+*.bin
+*.safetensors
+__pycache__
+.pytest_cache
+third_party/ocf/src/ocf-core/build
