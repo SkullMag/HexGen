@@ -1,0 +1,14 @@
+{
+  "description": "13B FP16, two replicas per arm. Historical hosts are pinned; availability must be rechecked before provisioning. CPU, RAM GiB and disk GB match the accepted Oct 13 deployment.",
+  "nodes": [
+    {"name":"homogeneous-1","site":"STAR","host":"star-w5.fabric-testbed.net","image":"docker_ubuntu_22","instance_type":"fabric.c2.m8.d100","components":[{"name":"gpu0","model":"GPU_TeslaT4"},{"name":"gpu1","model":"GPU_TeslaT4"}]},
+    {"name":"homogeneous-2","site":"STAR","host":"star-w6.fabric-testbed.net","image":"docker_ubuntu_22","instance_type":"fabric.c4.m64.d100","components":[{"name":"gpu0","model":"GPU_TeslaT4"},{"name":"gpu1","model":"GPU_TeslaT4"}]},
+    {"name":"heterogeneous-1","site":"MAX","host":"max-w2.fabric-testbed.net","image":"docker_ubuntu_22","instance_type":"fabric.c4.m64.d100","components":[{"name":"gpu0","model":"GPU_RTX6000"},{"name":"gpu1","model":"GPU_RTX6000"}]},
+    {"name":"heterogeneous-2-stage-1","site":"GATECH","host":"gatech-w2.fabric-testbed.net","image":"docker_ubuntu_22","instance_type":"fabric.c4.m64.d100","components":[{"name":"gpu0","model":"GPU_A30"}]},
+    {"name":"heterogeneous-2-stage-2","site":"GATECH","host":"gatech-w5.fabric-testbed.net","image":"docker_ubuntu_22","instance_type":"fabric.c4.m64.d100","components":[{"name":"gpu0","model":"GPU_A30"}]}
+  ],
+  "networks": [
+    {"name":"private-star","type":"L2Bridge","subnet":"10.80.1.0/24","members":[{"node":"homogeneous-1","address":"10.80.1.2"},{"node":"homogeneous-2","address":"10.80.1.3"}]},
+    {"name":"private-gatech","type":"L2Bridge","subnet":"10.80.2.0/24","members":[{"node":"heterogeneous-2-stage-1","address":"10.80.2.2"},{"node":"heterogeneous-2-stage-2","address":"10.80.2.3"}]}
+  ]
+}

@@ -6,3 +6,7 @@ __pycache__
 .env
 *.pem
 *.key
+
+# Local FABRIC controller environment and new experiment captures.
+/.venv-fabric/
+/runs/

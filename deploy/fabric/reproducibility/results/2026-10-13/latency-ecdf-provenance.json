@@ -1,0 +1,23 @@
+{
+  "generated_utc": "2026-10-18T17:42:03.757317+00:00",
+  "script_sha256": "a58e6947c60db65f95274ce9fab47fccaf5b6f23341bd206cf0c7c36586c30db",
+  "versions": {
+    "numpy": "2.5.3",
+    "matplotlib": "3.11.2"
+  },
+  "definition": "Successful completion latency from scheduled arrival in raw seconds; failures at infinity; all offered requests in denominator.",
+  "inputs": {
+    "deploy/fabric/reproducibility/results/2026-10-13/32_1/homogeneous.json": "677c5185c161f2a1380904ef75880eda72a6bbafb1cb0ff898a7d4a80696636a",
+    "deploy/fabric/reproducibility/results/2026-10-13/32_1/heterogeneous.json": "a41fde00ed86525bb611e9b15ea31ffe1f50bce847ec864dda34b67c3babb304",
+    "deploy/fabric/reproducibility/results/2026-10-13/64_0.5/homogeneous.json": "4e3bab2163da1934fe324eab9475dd2e42a3b7764d25b2e5c175c7c7996341e4",
+    "deploy/fabric/reproducibility/results/2026-10-13/64_0.5/heterogeneous.json": "41635e76dc22d5e33d5c50553d0f84c1cb4efe0bf97b4a88cd119bec5e447933",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.125/homogeneous.json": "a38796a440352447a6a1064024edd38c5fec0099177a02f9999c9c37c20f044f",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.125/heterogeneous.json": "207f4961d16426655df55ddc9766ca7790bc0a70fe278046274510d4ec8ca9be",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.25/homogeneous.json": "6cd3b7c52ed66d35ef9ae417493efca328e528cb9c9898aaf94049b2080a7e9d",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.25/heterogeneous.json": "e5e5d2fdfd8344d22531e060ccd545f3d8551d9753a49294b3c9fa1107887360",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.5/homogeneous.json": "53c69c4e0fe49eba17f072cd181ef801ba7b2e0f992e818a09d239df1945dbc9",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_0.5/heterogeneous.json": "bb9200d6d01918c811421fb6e83d7e3d48d8dcec4ba708ae6989b25c482c0a0e",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_1/homogeneous.json": "5700ccd6a909f259dd027aa5c136675e25f0c92d40e05363546995a10b683cc1",
+    "deploy/fabric/reproducibility/results/2026-10-13/128_1/heterogeneous.json": "0d3bf6414a210402faf412a281ad6deeb42b1fe449d10d495ad6652f8a0d6bae"
+  }
+}

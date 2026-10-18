@@ -1,0 +1,74 @@
+{
+  "32_1": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  },
+  "64_0.5": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  },
+  "128_0.125": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  },
+  "128_0.25": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  },
+  "128_0.5": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  },
+  "128_1": {
+    "homogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    },
+    "heterogeneous": {
+      "offered": 100,
+      "successful": 100,
+      "failed": 0
+    }
+  }
+}

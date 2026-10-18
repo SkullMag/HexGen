@@ -1,0 +1,7 @@
+{
+  "input_tokens": 128,
+  "output_tokens": 64,
+  "rate": 0.5,
+  "requests_per_arm": 100,
+  "replicas_per_arm": 2
+}
