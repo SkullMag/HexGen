@@ -32,5 +32,7 @@ jobs:
       - run: python -m unittest discover -s deploy/fabric/reproducibility -p 'test_*.py' -v
       - name: Validate plan without authentication or allocations
         run: python -O deploy/fabric/reproducibility/provision.py provision --plan deploy/fabric/reproducibility/five-node-plan.json --name offline --out /tmp/unused --dry-run
+      - name: Validate telemetry template without contacting FABRIC
+        run: python deploy/fabric/reproducibility/telemetry.py --config deploy/fabric/reproducibility/telemetry-plan.json --out /tmp/unused --duration 60 --dry-run
       - name: Rebuild all six measured latency ECDFs
         run: python deploy/fabric/reproducibility/plot_ecdf.py deploy/fabric/reproducibility/results/2026-10-13

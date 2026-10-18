@@ -99,3 +99,9 @@ python -O, and rebuilds all six plots on PRs. Controller dependencies are pinned
 guest probes use the standard library. Keep local environments and runs untracked.
 
 FABlib API reference: https://fabric-fablib.readthedocs.io/en/latest/
+
+For timestamped GPU utilization/memory samples and directional inter-VM latency
+probes during the workload, use telemetry.py and telemetry-plan.json. TELEMETRY.txt
+documents the bounded command wrapper, raw data, time alignment, coverage caveats
+and matched-budget study controls. This is additional collection for future runs;
+the six historical runs cannot be retroactively given GPU/network time series.

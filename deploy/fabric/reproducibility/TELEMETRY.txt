@@ -1,0 +1,146 @@
+GPU AND INTER-VM MEASUREMENTS
+
+telemetry.py wraps your existing benchmark command. It uses FABlib to upload a small
+standard-library collector to the selected VMs, starts every collector before the
+command, then stops and retrieves their files on completion or a benchmark failure.
+It preserves existing resources.json; when absent, it captures FABlib metadata first.
+Run the detailed resource snapshot from README.txt after installing the model/drivers.
+No reservations, drivers, firewall rules or inference/scheduler behavior are changed.
+
+1. Copy telemetry-plan.json and fill in the current slice IDs, peer IPs, active arm,
+workload/hash/seed and parallelism metadata. Select only that arm's nodes and remove
+peers that are outside the selected nodes. The example includes both arms to show
+the historical topology; it is not a current reservation or a runnable live plan.
+2001:db8:: addresses are documentation placeholders and must be replaced.
+
+Peer addresses must match the routes you actually want to investigate. Use private
+data-plane IPs for pipeline traffic, and the actual cross-site address for cross-site
+traffic. Specify both directions when measuring both directions. The peer's path
+label records your intended path; it does not verify NCCL/OCF chose that interface.
+Do not treat communication between independent replicas as a model pipeline hop.
+
+Optionally add "tcp_port": PORT to a peer to measure TCP connection setup to an
+existing, permitted service. The collector opens no server/listening ports. A TCP
+connection probe closes immediately after connecting and sends no application data.
+ICMP uses one 56-byte-payload echo per interval and needs ping/iputils in the guest.
+Missing tools, permissions, blocked ICMP and refused TCP connections are recorded.
+
+2. Validate without API calls, SSH, allocations or launching the benchmark:
+  "$PY" "$TOOLS/telemetry.py" --config /path/to/arm-telemetry.json --out runs/NEW-RUN/128_0.5/homogeneous --duration 900 --dry-run
+
+3. Run one arm with a finite workload deadline, then run the other arm sequentially:
+  "$PY" "$TOOLS/telemetry.py" --config /path/to/arm-telemetry.json --out runs/NEW-RUN/128_0.5/homogeneous --duration 900 --fabric-rc "$HOME/work/fabric_config/fabric_rc" -- python /path/to/your/native-benchmark.py ARGS
+
+--duration limits the benchmark command (or a capture-only session with no command).
+A command timeout/interrupt terminates its local process group and preserves output.
+For a remote benchmark launched by SSH, the benchmark itself must enforce a matching
+remote deadline; a lost SSH session cannot guarantee remote child termination.
+Collectors have an independent watchdog (duration + 300 seconds), including a startup
+allowance, and bounded subprocess/network probes. GPU and network workers are separate.
+Stopping/retrieval can take up to 120 seconds per VM plus SSH/transfer overhead; the
+watchdog remains the fallback after a controller/SSH failure. No lease is renewed.
+Remote collectors/logs are kept in the unique /tmp directory recorded in the manifest.
+Capture sizes grow with duration; avoid indefinite or unnecessarily dense sampling.
+
+Default intervals are 1 second for GPU samples and 5 seconds for peer probes. They
+are configurable. Higher probe frequency adds CPU/network load; keep instrumentation
+settings identical across arms and quantify its overhead with an on/off control.
+
+The GPU query records each device's UUID, index and PCI address plus:
+  gpu_utilization_pct: percentage of the driver sample window with kernel activity.
+  memory_activity_pct: percentage with memory read/write activity, NOT VRAM occupancy.
+  memory_used_mib, memory_total_mib: occupied and total GPU framebuffer memory.
+  power_w, temperature_c, sm_clock_mhz, memory_clock_mhz: when the driver supports them.
+Unsupported fields are null with their raw unavailable marker, never a numeric zero.
+These are device-level samples, not per-request CUDA timings or measured FLOP rates.
+Query duration and start/finish timestamps expose slow samples and missing coverage.
+NVIDIA definitions: https://docs.nvidia.com/deploy/nvidia-smi/index.html
+
+4. Files written beside each arm's experiment data:
+  resources.txt / resources.json: existing inventory or initial FABlib metadata capture.
+  telemetry/manifest.json: config, scripts/input hashes, selected nodes, physical
+    hosts/sites, readiness, collection status, download failures and clock observations.
+  telemetry/events.jsonl: command and collection boundaries on the controller clock.
+  telemetry/NODE/gpu.jsonl: timestamped per-device samples and explicit failures.
+  telemetry/NODE/network.jsonl: timestamped directional ICMP RTT / optional TCP connect
+    measurements, destination/port/path labels, failures, and total probe duration.
+  telemetry/NODE/{ready,done}.json: guest identity, watchdog/stop reason and sample counts.
+  telemetry/NODE/agent.log: collector diagnostics.
+  telemetry/summary.json: per-device utilization/memory/power/temperature/clock statistics,
+    per-path latency statistics, probe failure fractions, data coverage and input hashes.
+
+"collected" means retrieval completed, not that every probe succeeded or every GPU
+field was supported. The summary exposes missing/error counts. A missing GPU or an
+unreachable path is not zero utilization/latency. Probe failure fraction includes
+tool/permission errors; do not label it packet loss without inspecting the failures.
+An ICMP time<... reply retains its upper-bound marker; do not interpret it as exact.
+Summary means/percentiles cover the ENTIRE capture, including setup/teardown, and
+are sample-weighted. Use the workload window and sample durations for workload-only
+or time-weighted analysis. Rebuild the summary without contacting FABRIC:
+  "$PY" "$TOOLS/summarize_telemetry.py" runs/NEW-RUN/128_0.5/homogeneous/telemetry
+
+5. Align with the native benchmark without changing its request scheduler:
+In a Python driver, put this tools directory on sys.path, then:
+  from telemetry import Session
+  with Session(fab, telemetry_config, experiment_dir, duration=900) as measurements:
+      # Use the benchmark's own actual clock origin and record it with this marker.
+      measurements.mark('workload_started', origin_unix_ns=ORIGIN_UNIX_NS,
+                        origin_monotonic_ns=ORIGIN_MONOTONIC_NS, arm='homogeneous')
+      # Run the existing native/LMSYS Poisson benchmark unchanged.
+      measurements.mark('workload_finished', arm='homogeneous')
+
+A child benchmark wrapped by the CLI can instead call:
+  from telemetry import mark
+  mark(experiment_dir, 'workload_started', origin_unix_ns=ORIGIN_UNIX_NS,
+       origin_monotonic_ns=ORIGIN_MONOTONIC_NS, arm='homogeneous')
+  # Existing requests with scheduled/submitted/completed offsets.
+  mark(experiment_dir, 'workload_finished', arm='homogeneous')
+
+The Python context manager bounds collector lifetime; your driver must separately
+bound its benchmark work (or call run_command with a deadline). The CLI enforces the
+command deadline itself. Model warmup/loading should be distinguished in events.
+
+Retain the original per-request offsets and actual origin in the private run data.
+The wrapper's command_started event precedes interpreter/model/client startup and is
+NOT the first Poisson arrival. Existing content-free historical exports retain only
+success/latency and cannot reconstruct an exact per-request timeline retrospectively.
+
+Each sample records guest Unix nanoseconds and monotonic time. The controller takes
+three SSH guest-clock observations before and after collection and stores the one
+with the smallest midpoint uncertainty. offset_ms is guest minus controller time;
+subtract it when aligning guest timestamps. The half-SSH-round-trip bound can be
+large/asymmetric, and clocks may drift or step between observations. It is NOT clock
+synchronization. Inspect both bounds/drift and avoid per-request causal claims when
+timing uncertainty is too large. RTT probes use a local clock, not clock subtraction.
+
+WHAT TO INVESTIGATE WITH THE NEW DATA
+
+Use the existing paper settings first: 32/64/128 output tokens and the published
+arrival rates already used by our pilot. Keep model/checkpoint/tokenizer, FP16,
+FlashAttention, prompts, seeds, exact offered trace, replica counts and SLO definition
+matched across arms. Repeat bounded trials with paired traces, alternating arm order.
+Measure warm/idle reference periods separately from the loaded request window.
+
+Before claiming "same performance for less budget", preserve dated price evidence
+for BOTH configurations from one provider, with the same pricing model/currency and
+all required VMs/CPU/RAM/GPU/network charges. Record this in context.price_evidence;
+null means unknown, never zero cost. FABRIC allocation access itself is not a rental
+price. Do not use GPU counts or VRAM capacity as a substitute for equal budgets.
+
+At each common SLO deadline, compare end-to-end latency ECDFs, p50/p95/p99, errors,
+SLO attainment over ALL offered requests, and SLO-qualified goodput. Compare the
+complete measured-window cost and cost per successful in-SLO request, including idle
+resources and network charges. Preserve a common reference/SLO scale. An arm with
+faster GPUs can be faster without demonstrating a budget saving.
+
+Use utilization and memory traces to identify imbalance, idle pipeline stages or
+memory pressure, and directional RTTs to identify candidate network bottlenecks.
+Vary same-site/cross-site placement while holding GPUs/workload fixed when possible;
+vary GPU mix while keeping the route comparable. Small-packet ICMP RTT and TCP SYN
+timing do not measure activation-transfer bandwidth, NCCL collectives, TP/PP stalls,
+TTFT or token-by-token latency. Collect those separately before attributing a cause.
+Use matched controls to test hypotheses, not just correlations with an ECDF gap.
+
+Existing Oct 13 runs have no such time series. These tools add collection to future
+runs; they do not manufacture or backfill GPU/network measurements for historical runs.
+The current T4 versus RTX 6000/A30 pilot still has no verified equal-budget price basis.

@@ -1,0 +1,28 @@
+{
+  "description": "Template only: replace slice IDs and documentation IPs. Select only the VMs used by the measured arm; set paths to the actual data/control routes.",
+  "gpu_interval_s": 1,
+  "network_interval_s": 5,
+  "probe_timeout_s": 1,
+  "context": {
+    "arm": "SET_PER_RUN",
+    "model": "OpenLLaMA-13B",
+    "precision": "FP16",
+    "flash_attention": true,
+    "input_tokens": 128,
+    "output_tokens": 128,
+    "rate": 0.5,
+    "requests_per_arm": 100,
+    "replicas_per_arm": 2,
+    "workload_seed": "SET_PER_RUN",
+    "workload_sha256": "SET_PER_RUN",
+    "parallelism": "TP stays within each VM; second heterogeneous replica uses TP1/PP2",
+    "price_evidence": null
+  },
+  "nodes": [
+    {"name":"homogeneous-1","slice_id":"REPLACE_SLICE_ID","peers":[{"name":"homogeneous-2","address":"10.80.1.3","path":"replica-control"}]},
+    {"name":"homogeneous-2","slice_id":"REPLACE_SLICE_ID","peers":[{"name":"homogeneous-1","address":"10.80.1.2","path":"replica-control"}]},
+    {"name":"heterogeneous-1","slice_id":"REPLACE_RTX_SLICE_ID","peers":[{"name":"heterogeneous-2-stage-1","address":"2001:db8::2","path":"replica-control-cross-site"}]},
+    {"name":"heterogeneous-2-stage-1","slice_id":"REPLACE_SLICE_ID","peers":[{"name":"heterogeneous-2-stage-2","address":"10.80.2.3","path":"pipeline-data"},{"name":"heterogeneous-1","address":"2001:db8::1","path":"replica-control-cross-site"}]},
+    {"name":"heterogeneous-2-stage-2","slice_id":"REPLACE_SLICE_ID","peers":[{"name":"heterogeneous-2-stage-1","address":"10.80.2.2","path":"pipeline-data"}]}
+  ]
+}
