@@ -20,6 +20,7 @@ from megatron.initialize import initialize_megatron
 from megatron import get_args
 from threading import Thread
 from multiprocessing import Process
+from serial_inference import SerialInference
 
 class LlamaWorker(InferenceWorker):
     def __init__(self, model_name, head_node, args, ) -> None:
@@ -28,11 +29,17 @@ class LlamaWorker(InferenceWorker):
         self.args = args
         self.rank = args.rank
         self.world_size = args.world_size
+        self.inference_executor = SerialInference()
         self.model, self.tokenizer, self.pp_groups = create_model(args)
 
         super().__init__(model_name, head_node, self.rank, self.rank, args=args)
 
     async def handle_requests(self, msg):
+        return await self.inference_executor.run(self.handle_requests_sync, msg)
+
+    def handle_requests_sync(self, msg):
+        # CUDA's current device is thread-local; inference runs on our worker thread.
+        torch.cuda.set_device(self.args.local_rank)
 
         model_msg = self.parse_msg(msg)
 

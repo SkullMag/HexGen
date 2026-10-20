@@ -88,6 +88,8 @@ class InferenceWorker():
     async def reply(self, msg, data):
         data = json.dumps(data)
         await self.nc.publish(msg.reply, bytes(data, encoding='utf-8'))
+        # publish() can only enqueue bytes. Send this response before more inference.
+        await self.nc.flush(timeout=10)
     
     async def launch(self, params, rank):
 

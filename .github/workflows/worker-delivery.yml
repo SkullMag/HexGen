@@ -1,0 +1,32 @@
+name: Worker response delivery
+
+on:
+  pull_request:
+    paths:
+      - benchmark/hexgen_documents/_llama_worker.py
+      - benchmark/utils/_base_rank_based.py
+      - benchmark/utils/serial_inference.py
+      - benchmark/tests/**
+      - .github/workflows/worker-delivery.yml
+  push:
+    branches: [main]
+    paths:
+      - benchmark/hexgen_documents/_llama_worker.py
+      - benchmark/utils/_base_rank_based.py
+      - benchmark/utils/serial_inference.py
+      - benchmark/tests/**
+      - .github/workflows/worker-delivery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s benchmark/tests -p 'test_*.py' -v
